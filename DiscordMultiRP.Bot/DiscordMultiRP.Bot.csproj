@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp2.2</TargetFramework>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Discord.Net" Version="2.0.0" />
+    <PackageReference Include="nlog" Version="4.5.11" />
+    <PackageReference Include="nlog.config" Version="4.5.11" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="NLog">
+      <HintPath>..\..\..\..\.nuget\packages\nlog\4.5.11\lib\netstandard2.0\NLog.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>
