@@ -8,6 +8,9 @@
 
   <ItemGroup>
     <PackageReference Include="Discord.Net" Version="2.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.2.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
     <PackageReference Include="nlog" Version="4.5.11" />
     <PackageReference Include="nlog.config" Version="4.5.11" />
   </ItemGroup>
@@ -16,6 +19,12 @@
     <Reference Include="NLog">
       <HintPath>..\..\..\..\.nuget\packages\nlog\4.5.11\lib\netstandard2.0\NLog.dll</HintPath>
     </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>
