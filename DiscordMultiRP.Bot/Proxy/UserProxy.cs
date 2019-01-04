@@ -7,6 +7,7 @@ using System.Xml.Xsl;
 using Discord;
 using Discord.Webhook;
 using Discord.WebSocket;
+using DiscordMultiRP.Bot.Data;
 using NLog;
 
 namespace DiscordMultiRP.Bot.Proxy
@@ -16,17 +17,19 @@ namespace DiscordMultiRP.Bot.Proxy
         private static readonly Logger log = LogManager.GetCurrentClassLogger();
 
         private readonly DiscordSocketClient discord;
-        private readonly IProxyConfig config;
+        private readonly IProxyBuilder proxyBuilder;
+        private readonly RegexCache regexCache;
 
-        public UserProxy(DiscordSocketClient discord, IProxyConfig config)
+        public UserProxy(DiscordSocketClient discord, IProxyBuilder proxyBuilder)
         {
             this.discord = discord;
-            this.config = config;
+            this.proxyBuilder = proxyBuilder;
+            regexCache = new RegexCache();
         }
 
         public async Task HandleMessage(SocketMessage msg)
         {
-            var user = LookupUser(msg.Author);
+            var user = await proxyBuilder.GetUserById(msg.Author.Id);
             if (user != null && msg.Channel is ITextChannel c)
             {
                 log.Debug($"Found {user.Proxies.Count} registered proxies for user {msg.Author}");
@@ -34,7 +37,7 @@ namespace DiscordMultiRP.Bot.Proxy
                 if (p == null)
                 {
                     log.Debug($"Using last proxy for {msg.Author} in {c.Guild.Name}:{c.Name}");
-                    p = user.LastProxies[c];
+                    p = await proxyBuilder.GetLastProxyForUserAndChannel(user, c.Id);
                     text = msg.Content;
                 }
 
@@ -45,9 +48,9 @@ namespace DiscordMultiRP.Bot.Proxy
                         log.Debug($"Proxying message in channel {c.Guild.Name}:{c.Name} ({c.Id})" +
                                   $" for user {msg.Author} - " +
                                   $"proxy name is {p.Name} ({(p.IsGlobal ? "global" : "channel")})");
+                        await SendMessage(msg, text, p);
+                        await proxyBuilder.SetLastProxyForUserAndChannel(p, user, c.Id);
                         await msg.DeleteAsync();
-                        await SendMessage(msg, p, text);
-                        user.LastProxies[c] = p;
                     }
                     catch (Exception ex)
                     {
@@ -57,8 +60,7 @@ namespace DiscordMultiRP.Bot.Proxy
             }
         }
 
-        private async Task SendMessage(SocketMessage msg, ProxyDescription proxy,
-            string text)
+        private async Task SendMessage(SocketMessage msg, string text, Data.Proxy proxy)
         {
             if (!(msg.Channel is ITextChannel c))
             {
@@ -77,11 +79,11 @@ namespace DiscordMultiRP.Bot.Proxy
                 avatarUrl: msg.Author.GetAvatarUrl());
         }
 
-        private (ProxyDescription proxy, string text) MatchProxyContent(SocketMessage msg, List<ProxyDescription> proxyDescriptions)
+        private (Data.Proxy proxy, string text) MatchProxyContent(SocketMessage msg, IEnumerable<Data.Proxy> proxies)
         {
-            foreach (var p in proxyDescriptions.Where(p => p.IsForChannel(msg)))
+            foreach (var p in proxies.Where(p => p.IsForChannel(msg)))
             {
-                var m = p.Regex.Match(msg.Content);
+                var m = regexCache.GetRegexFor(p).Match(msg.Content);
                 if (m.Success)
                 {
                     return (proxy: p, text: m.Groups["text"].Value);
@@ -89,11 +91,6 @@ namespace DiscordMultiRP.Bot.Proxy
             }
 
             return (null, null);
-        }
-
-        private User LookupUser(SocketUser msgAuthor)
-        {
-            return config.GetUserById(msgAuthor.Id);
         }
     }
 }
