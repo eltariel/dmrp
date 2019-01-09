@@ -260,3 +260,5 @@ paket-files/
 __pycache__/
 *.pyc
 DiscordMultiRP\.Bot/appsettings\.json
+
+DiscordMultiRP\.Bot/Settings\.job

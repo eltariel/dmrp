@@ -5,7 +5,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Xml.Xsl;
 using Discord;
-using Discord.Webhook;
 using Discord.WebSocket;
 using DiscordMultiRP.Bot.Data;
 using NLog;
@@ -16,15 +15,15 @@ namespace DiscordMultiRP.Bot.Proxy
     {
         private static readonly Logger log = LogManager.GetCurrentClassLogger();
 
-        private readonly DiscordSocketClient discord;
         private readonly IProxyBuilder proxyBuilder;
         private readonly RegexCache regexCache;
+        private readonly WebhookCache webhookCache;
 
         public UserProxy(DiscordSocketClient discord, IProxyBuilder proxyBuilder)
         {
-            this.discord = discord;
             this.proxyBuilder = proxyBuilder;
             regexCache = new RegexCache();
+            webhookCache = new WebhookCache(discord);
         }
 
         public async Task HandleMessage(SocketMessage msg)
@@ -68,11 +67,7 @@ namespace DiscordMultiRP.Bot.Proxy
                 return;
             }
 
-            var hooks = await c.GetWebhooksAsync();
-            var wh = hooks.FirstOrDefault(h => h.Creator.Id == discord.CurrentUser.Id) ??
-                       await c.CreateWebhookAsync("DiscordMultiRP Proxy Hook");
-
-            var hc = new DiscordWebhookClient(wh);
+            var hc = await webhookCache.GetWebhook(c);
             await hc.SendMessageAsync(text,
                 username: $"{proxy.Name} [{msg.Author.Username}]",
                 embeds: msg.Embeds,

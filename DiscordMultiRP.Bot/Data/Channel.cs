@@ -5,5 +5,7 @@
         public int Id { get; set; }
 
         public ulong DiscordId { get; set; }
+
+        public bool IsMonitored { get; set; }
     }
 }

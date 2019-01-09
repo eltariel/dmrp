@@ -18,6 +18,7 @@ namespace DiscordMultiRP.Bot.Data
         public DbSet<Proxy> Proxies { get; set; }
         public DbSet<Channel> Channels { get; set; }
         public DbSet<UserChannel> UserChannels { get; set; }
+        public DbSet<ProxyChannel> ProxyChannels { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -25,6 +26,9 @@ namespace DiscordMultiRP.Bot.Data
                 .HasOne(p => p.Channel)
                 .WithMany()
                 .IsRequired(false);
+
+            modelBuilder.Entity<Proxy>().HasMany(p => p.Channels).WithOne(pc => pc.Proxy).IsRequired();
+            //modelBuilder.Entity<ProxyChannel>().HasOne(p => p.Channel).WithMany().IsRequired();
         }
     }
 }

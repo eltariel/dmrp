@@ -19,7 +19,7 @@ namespace DiscordMultiRP.Bot.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128)
                 .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
-            modelBuilder.Entity("DiscordMultiRP.Bot.Data.ChannelEntity", b =>
+            modelBuilder.Entity("DiscordMultiRP.Bot.Data.Channel", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -28,12 +28,14 @@ namespace DiscordMultiRP.Bot.Migrations
                     b.Property<decimal>("DiscordId")
                         .HasConversion(new ValueConverter<decimal, decimal>(v => default(decimal), v => default(decimal), new ConverterMappingHints(precision: 20, scale: 0)));
 
+                    b.Property<bool>("IsMonitored");
+
                     b.HasKey("Id");
 
                     b.ToTable("Channels");
                 });
 
-            modelBuilder.Entity("DiscordMultiRP.Bot.Data.ProxyEntity", b =>
+            modelBuilder.Entity("DiscordMultiRP.Bot.Data.Proxy", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -45,7 +47,9 @@ namespace DiscordMultiRP.Bot.Migrations
 
                     b.Property<string>("Name");
 
-                    b.Property<string>("Regex");
+                    b.Property<string>("Prefix");
+
+                    b.Property<string>("Suffix");
 
                     b.Property<int?>("UserId");
 
@@ -58,7 +62,42 @@ namespace DiscordMultiRP.Bot.Migrations
                     b.ToTable("Proxies");
                 });
 
-            modelBuilder.Entity("DiscordMultiRP.Bot.Data.UserChannelEntity", b =>
+            modelBuilder.Entity("DiscordMultiRP.Bot.Data.ProxyChannel", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<int?>("ChannelId");
+
+                    b.Property<int>("ProxyId");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChannelId");
+
+                    b.HasIndex("ProxyId");
+
+                    b.ToTable("ProxyChannels");
+                });
+
+            modelBuilder.Entity("DiscordMultiRP.Bot.Data.User", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<decimal>("DiscordId")
+                        .HasConversion(new ValueConverter<decimal, decimal>(v => default(decimal), v => default(decimal), new ConverterMappingHints(precision: 20, scale: 0)));
+
+                    b.Property<int>("Role");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("DiscordMultiRP.Bot.Data.UserChannel", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -81,42 +120,40 @@ namespace DiscordMultiRP.Bot.Migrations
                     b.ToTable("UserChannels");
                 });
 
-            modelBuilder.Entity("DiscordMultiRP.Bot.Data.UserEntity", b =>
+            modelBuilder.Entity("DiscordMultiRP.Bot.Data.Proxy", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
-
-                    b.Property<decimal>("DiscordId")
-                        .HasConversion(new ValueConverter<decimal, decimal>(v => default(decimal), v => default(decimal), new ConverterMappingHints(precision: 20, scale: 0)));
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Users");
-                });
-
-            modelBuilder.Entity("DiscordMultiRP.Bot.Data.ProxyEntity", b =>
-                {
-                    b.HasOne("DiscordMultiRP.Bot.Data.ChannelEntity", "Channel")
+                    b.HasOne("DiscordMultiRP.Bot.Data.Channel", "Channel")
                         .WithMany()
                         .HasForeignKey("ChannelId");
 
-                    b.HasOne("DiscordMultiRP.Bot.Data.UserEntity", "User")
+                    b.HasOne("DiscordMultiRP.Bot.Data.User", "User")
                         .WithMany("Proxies")
                         .HasForeignKey("UserId");
                 });
 
-            modelBuilder.Entity("DiscordMultiRP.Bot.Data.UserChannelEntity", b =>
+            modelBuilder.Entity("DiscordMultiRP.Bot.Data.ProxyChannel", b =>
                 {
-                    b.HasOne("DiscordMultiRP.Bot.Data.ChannelEntity", "Channel")
+                    b.HasOne("DiscordMultiRP.Bot.Data.Channel", "Channel")
                         .WithMany()
                         .HasForeignKey("ChannelId");
 
-                    b.HasOne("DiscordMultiRP.Bot.Data.ProxyEntity", "LastProxy")
+                    b.HasOne("DiscordMultiRP.Bot.Data.Proxy", "Proxy")
+                        .WithMany("Channels")
+                        .HasForeignKey("ProxyId")
+                        .OnDelete(DeleteBehavior.Cascade);
+                });
+
+            modelBuilder.Entity("DiscordMultiRP.Bot.Data.UserChannel", b =>
+                {
+                    b.HasOne("DiscordMultiRP.Bot.Data.Channel", "Channel")
+                        .WithMany()
+                        .HasForeignKey("ChannelId");
+
+                    b.HasOne("DiscordMultiRP.Bot.Data.Proxy", "LastProxy")
                         .WithMany()
                         .HasForeignKey("LastProxyId");
 
-                    b.HasOne("DiscordMultiRP.Bot.Data.UserEntity", "User")
+                    b.HasOne("DiscordMultiRP.Bot.Data.User", "User")
                         .WithMany("Channels")
                         .HasForeignKey("UserId");
                 });

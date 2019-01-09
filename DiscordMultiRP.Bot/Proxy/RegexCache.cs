@@ -6,14 +6,14 @@ namespace DiscordMultiRP.Bot.Proxy
 {
     public class RegexCache
     {
-        private readonly Dictionary<string, Regex> regexCache = new Dictionary<string, Regex>();
+        private readonly Dictionary<(string, string), Regex> regexCache = new Dictionary<(string, string), Regex>();
 
         public Regex GetRegexFor(Data.Proxy p)
         {
-            if (!regexCache.TryGetValue(p.Regex, out var r))
+            if (!regexCache.TryGetValue((p.Prefix, p.Suffix), out var r))
             {
-                r = new Regex(p.Regex);
-                regexCache[p.Regex] = r;
+                r = new Regex($@"^\s*{p.Prefix ?? ""}\s*(?<text>.*)\s*{p.Suffix ?? ""}\s*$", RegexOptions.IgnoreCase);
+                regexCache[(p.Prefix, p.Suffix)] = r;
             }
             return r;
         }
