@@ -30,9 +30,17 @@
             </div>
             <div class="form-group form-check">
                 <label class="form-check-label">
-                    <input class="form-check-input" asp-for="IsGlobal" /> @Html.DisplayNameFor(model => model.IsGlobal)
+                    <input class="form-check-input" asp-for="IsReset" /> @Html.DisplayNameFor(model => model.IsReset)
                 </label>
             </div>
+            @if (ViewBag.User.IsAllowedGlobal)
+            {
+                <div class="form-group form-check">
+                    <label class="form-check-label">
+                        <input class="form-check-input" asp-for="IsGlobal"/> @Html.DisplayNameFor(model => model.IsGlobal)
+                    </label>
+                </div>
+            }
             <div class="form-group">
                 <input type="submit" value="Save" class="btn btn-primary" />
             </div>

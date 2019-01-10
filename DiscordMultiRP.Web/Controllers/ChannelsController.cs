@@ -2,26 +2,37 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Discord;
+using Discord.WebSocket;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using DiscordMultiRP.Bot.Data;
+using DiscordMultiRP.Web.Models;
+using DiscordMultiRP.Web.Util;
 
 namespace DiscordMultiRP.Web.Controllers
 {
     public class ChannelsController : Controller
     {
-        private readonly ProxyDataContext _context;
+        private readonly ProxyDataContext db;
+        private readonly DiscordHelper discordHelper;
 
-        public ChannelsController(ProxyDataContext context)
+        public ChannelsController(ProxyDataContext db, DiscordHelper discordHelper)
         {
-            _context = context;
+            this.db = db;
+            this.discordHelper = discordHelper;
         }
 
         // GET: Channels
         public async Task<IActionResult> Index()
         {
-            return View(await _context.Channels.ToListAsync());
+            var discord = await discordHelper.LoginBot();
+            var discordChannels = discord.Guilds.SelectMany(g => g.Channels).OfType<ITextChannel>();
+            var channels = (await db.Channels.ToListAsync())
+                .Select(c => new ChannelViewModel(c, discordChannels.FirstOrDefault(dc => dc.Id == c.DiscordId)));
+
+            return View(channels);
         }
 
         // GET: Channels/Details/5
@@ -32,7 +43,7 @@ namespace DiscordMultiRP.Web.Controllers
                 return NotFound();
             }
 
-            var channel = await _context.Channels
+            var channel = await db.Channels
                 .FirstOrDefaultAsync(m => m.Id == id);
             if (channel == null)
             {
@@ -43,8 +54,16 @@ namespace DiscordMultiRP.Web.Controllers
         }
 
         // GET: Channels/Create
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
+            var discord = await discordHelper.LoginBot();
+            var dbChannels = await db.Channels.ToListAsync();
+            var availableChannels = discord.Guilds
+                .SelectMany(g => g.Channels.Where(dc => dbChannels.All(c => c.DiscordId != dc.Id)), (g, c) => new{g, c})
+                .Select(i => new SelectListItem($"{i.g.Name}: {i.c.Name}", $"{i.c.Id}"))
+                .Distinct();
+
+            ViewBag.Channels = availableChannels;
             return View();
         }
 
@@ -57,8 +76,8 @@ namespace DiscordMultiRP.Web.Controllers
         {
             if (ModelState.IsValid)
             {
-                _context.Add(channel);
-                await _context.SaveChangesAsync();
+                db.Add(channel);
+                await db.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
             return View(channel);
@@ -72,7 +91,7 @@ namespace DiscordMultiRP.Web.Controllers
                 return NotFound();
             }
 
-            var channel = await _context.Channels.FindAsync(id);
+            var channel = await db.Channels.FindAsync(id);
             if (channel == null)
             {
                 return NotFound();
@@ -96,8 +115,8 @@ namespace DiscordMultiRP.Web.Controllers
             {
                 try
                 {
-                    _context.Update(channel);
-                    await _context.SaveChangesAsync();
+                    db.Update(channel);
+                    await db.SaveChangesAsync();
                 }
                 catch (DbUpdateConcurrencyException)
                 {
@@ -123,7 +142,7 @@ namespace DiscordMultiRP.Web.Controllers
                 return NotFound();
             }
 
-            var channel = await _context.Channels
+            var channel = await db.Channels
                 .FirstOrDefaultAsync(m => m.Id == id);
             if (channel == null)
             {
@@ -138,15 +157,15 @@ namespace DiscordMultiRP.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var channel = await _context.Channels.FindAsync(id);
-            _context.Channels.Remove(channel);
-            await _context.SaveChangesAsync();
+            var channel = await db.Channels.FindAsync(id);
+            db.Channels.Remove(channel);
+            await db.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
         private bool ChannelExists(int id)
         {
-            return _context.Channels.Any(e => e.Id == id);
+            return db.Channels.Any(e => e.Id == id);
         }
     }
 }

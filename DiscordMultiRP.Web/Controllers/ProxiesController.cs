@@ -25,7 +25,13 @@ namespace DiscordMultiRP.Web.Controllers
         public async Task<IActionResult> Index()
         {
             var id = GetDiscordId();
-            var contextProxies = db.Proxies.Where(p => p.User.DiscordId == id);
+            var user = await db.Users.FirstOrDefaultAsync(u => u.DiscordId == id);
+            ViewBag.User = user;
+
+            var contextProxies = user.Role == Role.Admin
+                ? db.Proxies.Include(p => p.User)
+                : db.Proxies.Where(p => p.User.DiscordId == id);
+
             return View(await contextProxies.ToListAsync());
         }
 
@@ -43,7 +49,8 @@ namespace DiscordMultiRP.Web.Controllers
             }
 
             var proxy = await db.Proxies
-                .Include(p => p.Channel)
+                .Include(p => p.User)
+                .Include(p => p.Channels).ThenInclude(pc => pc.Channel)
                 .FirstOrDefaultAsync(m => m.Id == id);
             if (proxy == null)
             {
@@ -54,10 +61,19 @@ namespace DiscordMultiRP.Web.Controllers
         }
 
         // GET: Proxies/Create
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
-            
+            await GetDiscordDbUser();
+
             return View();
+        }
+
+        private async Task<User> GetDiscordDbUser()
+        {
+            var discordId = GetDiscordId();
+            var user = await db.Users.FirstOrDefaultAsync(u => u.DiscordId == discordId);
+            ViewBag.User = user;
+            return user;
         }
 
         // POST: Proxies/Create
@@ -65,16 +81,19 @@ namespace DiscordMultiRP.Web.Controllers
         // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Name,Prefix,Suffix,IsGlobal")] Proxy proxy)
+        public async Task<IActionResult> Create([Bind("Id,Name,Prefix,Suffix,IsReset,IsGlobal")] Proxy proxy)
         {
             if (ModelState.IsValid)
             {
-                var discordId = GetDiscordId();
-                var user = await db.Users.FirstOrDefaultAsync(u=>u.DiscordId == discordId);
-                if (user == null)
+                var user = await GetDiscordDbUser();
+                if (user == null || user.Role == Role.None)
                 {
-                    user = new User{DiscordId = discordId};
-                    db.Add(user);
+                    return Forbid();
+                }
+
+                if (!user.IsAllowedGlobal)
+                {
+                    proxy.IsGlobal = false;
                 }
 
                 proxy.User = user;
@@ -99,6 +118,8 @@ namespace DiscordMultiRP.Web.Controllers
             {
                 return NotFound();
             }
+
+            await GetDiscordDbUser();
             return View(proxy);
         }
 
@@ -107,7 +128,7 @@ namespace DiscordMultiRP.Web.Controllers
         // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Prefix,Suffix,IsGlobal")] Proxy proxy)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Prefix,Suffix,IsReset,IsGlobal")] Proxy proxy)
         {
             if (id != proxy.Id)
             {
@@ -118,8 +139,17 @@ namespace DiscordMultiRP.Web.Controllers
             {
                 try
                 {
-                    db.Update(proxy);
-                    await db.SaveChangesAsync();
+                    var user = await GetDiscordDbUser();
+                    if (user != null)
+                    {
+                        if (!user.IsAllowedGlobal)
+                        {
+                            proxy.IsGlobal = false;
+                        }
+
+                        db.Update(proxy);
+                        await db.SaveChangesAsync();
+                    }
                 }
                 catch (DbUpdateConcurrencyException)
                 {

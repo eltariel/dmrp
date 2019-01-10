@@ -1,7 +1,9 @@
-﻿@model IEnumerable<DiscordMultiRP.Bot.Data.Proxy>
+﻿@using DiscordMultiRP.Bot.Data
+@model IEnumerable<DiscordMultiRP.Bot.Data.Proxy>
 
 @{
     ViewData["Title"] = "Index";
+    var user = ViewBag.User as User;
 }
 
 <h1>Index</h1>
@@ -12,6 +14,12 @@
 <table class="table">
     <thead>
         <tr>
+            @if (user?.IsAllowedGlobal ?? false)
+            {
+                <th>
+                    @Html.DisplayNameFor(model => model.User.DiscordId)
+                </th>
+            }
             <th>
                 @Html.DisplayNameFor(model => model.Name)
             </th>
@@ -22,14 +30,26 @@
                 @Html.DisplayNameFor(model => model.Suffix)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.IsGlobal)
+                @Html.DisplayNameFor(model => model.IsReset)
             </th>
+            @if (user?.IsAllowedGlobal ?? false)
+            {
+                <th>
+                    @Html.DisplayNameFor(model => model.IsGlobal)
+                </th>
+            }
             <th></th>
         </tr>
     </thead>
     <tbody>
 @foreach (var item in Model) {
         <tr>
+            @if (user.Role == Role.Admin)
+            {
+                <td>
+                    @Html.DisplayFor(modelItem => item.User.DiscordId)
+                </td>
+            }
             <td>
                 @Html.DisplayFor(modelItem => item.Name)
             </td>
@@ -40,8 +60,14 @@
                 @Html.DisplayFor(modelItem => item.Suffix)
             </td>
             <td>
-                @Html.DisplayFor(modelItem => item.IsGlobal)
+                @Html.DisplayFor(modelItem => item.IsReset)
             </td>
+            @if (user?.IsAllowedGlobal ?? false)
+            {
+                <td>
+                    @Html.DisplayFor(modelItem => item.IsGlobal)
+                </td>
+            }
             <td>
                 <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
                 <a asp-action="Details" asp-route-id="@item.Id">Details</a> |

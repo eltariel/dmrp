@@ -47,9 +47,19 @@ namespace DiscordMultiRP.Bot.Proxy
                         log.Debug($"Proxying message in channel {c.Guild.Name}:{c.Name} ({c.Id})" +
                                   $" for user {msg.Author} - " +
                                   $"proxy name is {p.Name} ({(p.IsGlobal ? "global" : "channel")})");
-                        await SendMessage(msg, text, p);
-                        await proxyBuilder.SetLastProxyForUserAndChannel(p, user, c.Id);
-                        await msg.DeleteAsync();
+
+                        var tasks = new List<Task>
+                        {
+                            proxyBuilder.SetLastProxyForUserAndChannel(p, user, c.Id),
+                            msg.DeleteAsync()
+                        };
+
+                        if (!p.IsReset)
+                        {
+                            tasks.Add(SendMessage(msg, text, p));
+                        }
+
+                        await Task.WhenAll(tasks);
                     }
                     catch (Exception ex)
                     {
@@ -67,11 +77,14 @@ namespace DiscordMultiRP.Bot.Proxy
                 return;
             }
 
-            var hc = await webhookCache.GetWebhook(c);
-            await hc.SendMessageAsync(text,
-                username: $"{proxy.Name} [{msg.Author.Username}]",
-                embeds: msg.Embeds,
-                avatarUrl: msg.Author.GetAvatarUrl());
+            if (!proxy.IsReset)
+            {
+                var hc = await webhookCache.GetWebhook(c);
+                await hc.SendMessageAsync(text,
+                    username: $"{proxy.Name} [{msg.Author.Username}]",
+                    embeds: msg.Embeds,
+                    avatarUrl: msg.Author.GetAvatarUrl());
+            }
         }
 
         private (Data.Proxy proxy, string text) MatchProxyContent(SocketMessage msg, IEnumerable<Data.Proxy> proxies)

@@ -37,7 +37,7 @@ namespace DiscordMultiRP.Bot.Proxy
             using (var db = GetDataContext())
             {
                 var dbUser = await db.Users
-                    .Include(u => u.Proxies).ThenInclude(p => p.Channel)
+                    .Include(u => u.Proxies).ThenInclude(p => p.Channels).ThenInclude(c => c.Channel)
                     .FirstOrDefaultAsync(u => u.DiscordId == userId);
                 return dbUser;
             }
@@ -50,7 +50,7 @@ namespace DiscordMultiRP.Bot.Proxy
                 var uc = await db.UserChannels
                     .Include(x => x.User)
                     .Include(x => x.Channel)
-                    .Include(x => x.LastProxy)
+                    .Include(x => x.LastProxy.Channels).ThenInclude(c => c.Channel)
                     .FirstOrDefaultAsync(x => x.User.Id == user.Id && x.Channel.DiscordId == channelId);
                 return uc?.LastProxy;
             }
@@ -78,7 +78,7 @@ namespace DiscordMultiRP.Bot.Proxy
                         dbUser.Channels.Add(uc);
                     }
 
-                    uc.LastProxy = dbUser.Proxies.FirstOrDefault(p => p.Id == proxy.Id);
+                    uc.LastProxy = proxy.IsReset ? null : dbUser.Proxies.FirstOrDefault(p => p.Id == proxy.Id);
                 }
 
                 await db.SaveChangesAsync();

@@ -14,13 +14,13 @@ namespace DiscordMultiRP.Web.Controllers
 {
     public class UsersController : Controller
     {
-        private readonly ProxyDataContext _context;
+        private readonly ProxyDataContext db;
         private readonly IConfiguration cfg;
         private readonly DiscordHelper discordHelper;
 
-        public UsersController(ProxyDataContext context, IConfiguration cfg, DiscordHelper discordHelper)
+        public UsersController(ProxyDataContext db, IConfiguration cfg, DiscordHelper discordHelper)
         {
-            _context = context;
+            db = db;
             this.cfg = cfg;
             this.discordHelper = discordHelper;
         }
@@ -30,7 +30,7 @@ namespace DiscordMultiRP.Web.Controllers
         {
             var discord = await discordHelper.LoginBot();
             var dUsers = discord.Guilds.SelectMany(g => g.Users).Distinct().ToList();
-            var dbUsers = await _context.Users.ToListAsync();
+            var dbUsers = await db.Users.ToListAsync();
             var modelUsers = dbUsers.Select(u => new UserViewModel(u, dUsers.FirstOrDefault(d => d.Id == u.DiscordId)));
 
             return View(modelUsers);
@@ -44,7 +44,7 @@ namespace DiscordMultiRP.Web.Controllers
                 return NotFound();
             }
 
-            var user = await _context.Users
+            var user = await db.Users
                 .FirstOrDefaultAsync(m => m.Id == id);
             if (user == null)
             {
@@ -59,7 +59,7 @@ namespace DiscordMultiRP.Web.Controllers
         {
             var discord = await discordHelper.LoginBot();
             var dUsers = discord.Guilds.SelectMany(g => g.Users).Distinct().ToList();
-            var dbUsers = await _context.Users.ToListAsync();
+            var dbUsers = await db.Users.ToListAsync();
             var modelUsers = dUsers
                 .Where(d => dbUsers.All(u => u.DiscordId != d.Id))
                 .Select(d => new SelectListItem($"{d.Username}#{d.Discriminator}", $"{d.Id}"))
@@ -79,8 +79,8 @@ namespace DiscordMultiRP.Web.Controllers
         {
             if (ModelState.IsValid)
             {
-                _context.Add(user);
-                await _context.SaveChangesAsync();
+                db.Add(user);
+                await db.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
             return View(user);
@@ -94,7 +94,7 @@ namespace DiscordMultiRP.Web.Controllers
                 return NotFound();
             }
 
-            var user = await _context.Users.FindAsync(id);
+            var user = await db.Users.FindAsync(id);
             if (user == null)
             {
                 return NotFound();
@@ -118,8 +118,8 @@ namespace DiscordMultiRP.Web.Controllers
             {
                 try
                 {
-                    _context.Update(user);
-                    await _context.SaveChangesAsync();
+                    db.Update(user);
+                    await db.SaveChangesAsync();
                 }
                 catch (DbUpdateConcurrencyException)
                 {
@@ -145,7 +145,7 @@ namespace DiscordMultiRP.Web.Controllers
                 return NotFound();
             }
 
-            var user = await _context.Users
+            var user = await db.Users
                 .FirstOrDefaultAsync(m => m.Id == id);
             if (user == null)
             {
@@ -160,15 +160,15 @@ namespace DiscordMultiRP.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var user = await _context.Users.FindAsync(id);
-            _context.Users.Remove(user);
-            await _context.SaveChangesAsync();
+            var user = await db.Users.FindAsync(id);
+            db.Users.Remove(user);
+            await db.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
         private bool UserExists(int id)
         {
-            return _context.Users.Any(e => e.Id == id);
+            return db.Users.Any(e => e.Id == id);
         }
 
     }

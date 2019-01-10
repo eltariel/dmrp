@@ -23,5 +23,7 @@ namespace DiscordMultiRP.Bot.Data
         public ICollection<Proxy> Proxies { get; set; }
 
         public ICollection<UserChannel> Channels { get; set; }
+
+        public bool IsAllowedGlobal => Role == Role.Admin || Role == Role.Global;
     }
 }

@@ -4,14 +4,16 @@ using DiscordMultiRP.Bot.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace DiscordMultiRP.Bot.Migrations
 {
     [DbContext(typeof(ProxyDataContext))]
-    partial class ProxyDataContextModelSnapshot : ModelSnapshot
+    [Migration("20190109205910_ResetChannelProxy")]
+    partial class ResetChannelProxy
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -41,6 +43,8 @@ namespace DiscordMultiRP.Bot.Migrations
                         .ValueGeneratedOnAdd()
                         .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
+                    b.Property<int?>("ChannelId");
+
                     b.Property<bool>("IsGlobal");
 
                     b.Property<bool>("IsReset");
@@ -54,6 +58,8 @@ namespace DiscordMultiRP.Bot.Migrations
                     b.Property<int?>("UserId");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ChannelId");
 
                     b.HasIndex("UserId");
 
@@ -120,6 +126,10 @@ namespace DiscordMultiRP.Bot.Migrations
 
             modelBuilder.Entity("DiscordMultiRP.Bot.Data.Proxy", b =>
                 {
+                    b.HasOne("DiscordMultiRP.Bot.Data.Channel", "Channel")
+                        .WithMany()
+                        .HasForeignKey("ChannelId");
+
                     b.HasOne("DiscordMultiRP.Bot.Data.User", "User")
                         .WithMany("Proxies")
                         .HasForeignKey("UserId");

@@ -1,9 +1,15 @@
-﻿<!DOCTYPE html>
+﻿@using Microsoft.Extensions.Configuration
+@using Microsoft.Extensions.DependencyInjection
+<!DOCTYPE html>
 <html>
+@{
+    var cfg = Context.RequestServices.GetRequiredService<IConfiguration>();
+    var appName = cfg["AppName"] ?? "DiscordMultiRP Bot Configuration";
+}
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - DiscordMultiRP.Web</title>
+    <title>@ViewData["Title"] - @appName</title>
 
     <environment include="Development">
         <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.css" />
@@ -21,7 +27,7 @@
     <header>
         <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
             <div class="container">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">DiscordMultiRP.Web</a>
+                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">@appName</a>
                 <button class="navbar-toggler" type="button" data-toggle="collapse" data-target=".navbar-collapse" aria-controls="navbarSupportedContent"
                         aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
@@ -44,7 +50,10 @@
                             </li>
                         }
                     </ul>
-                    <span class="navbar-text">Hi, @User.Identity.Name!</span>
+                    @if (User.Identity.IsAuthenticated)
+                    {
+                        <span class="navbar-text">Hi, @User.Identity.Name!</span>
+                    }
                     <ul class="navbar-nav">
                         @if (User.Identity.IsAuthenticated)
                         {
@@ -72,7 +81,7 @@
 
     <footer class="border-top footer text-muted">
         <div class="container">
-            &copy; 2019 - DiscordMultiRP.Web - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+            <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
         </div>
     </footer>
 
