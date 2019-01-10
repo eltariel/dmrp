@@ -20,7 +20,7 @@ namespace DiscordMultiRP.Web.Controllers
 
         public UsersController(ProxyDataContext db, IConfiguration cfg, DiscordHelper discordHelper)
         {
-            db = db;
+            this.db = db;
             this.cfg = cfg;
             this.discordHelper = discordHelper;
         }

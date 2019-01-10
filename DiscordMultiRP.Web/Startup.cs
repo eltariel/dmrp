@@ -74,8 +74,7 @@ namespace DiscordMultiRP.Web
                     options.TokenEndpoint = apiBase + "oauth2/token";
                     options.UserInformationEndpoint = apiBase + "users/@me";
 
-                    var scopes =
-                        "identify,email,guilds,connections,guilds.join,gdm.join,rpc.notifications.read,rpc.api,rpc,messages.read";
+                    var scopes = "identify,email,guilds,connections,guilds.join,gdm.join";
                     foreach (var s in scopes.Split(','))
                     {
                         options.Scope.Add(s);

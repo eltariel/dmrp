@@ -23,7 +23,7 @@ namespace DiscordMultiRP.Bot.Proxy
             {
                 var hooks = await channel.GetWebhooksAsync();
                 var hook = hooks.FirstOrDefault(h => h.Creator.Id == discord.CurrentUser.Id) ??
-                           await channel.CreateWebhookAsync($"DiscordMultiRP Proxy Hook - {channel.Name}");
+                           await channel.CreateWebhookAsync($"DMRP Proxy Hook");
 
                 client = new DiscordWebhookClient(hook);
                 hookClients[channel.Id] = client;

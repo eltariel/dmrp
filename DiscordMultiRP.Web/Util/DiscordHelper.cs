@@ -17,11 +17,19 @@ namespace DiscordMultiRP.Web.Util
         {
             var discord = new DiscordSocketClient();
             var ready = new TaskCompletionSource<bool>();
-            discord.Ready += async () => ready.SetResult(true);
+            discord.Ready += OnDiscordReady;
+
             await discord.LoginAsync(TokenType.Bot, cfg["Discord:bot-token"]);
             await discord.StartAsync();
             await ready.Task;
             return discord;
+
+            Task OnDiscordReady()
+            {
+                ready.SetResult(true);
+                discord.Ready -= OnDiscordReady;
+                return Task.CompletedTask;
+            }
         }
     }
 }

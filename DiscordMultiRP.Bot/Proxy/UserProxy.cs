@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 using System.Xml.Xsl;
 using Discord;
@@ -48,18 +49,13 @@ namespace DiscordMultiRP.Bot.Proxy
                                   $" for user {msg.Author} - " +
                                   $"proxy name is {p.Name} ({(p.IsGlobal ? "global" : "channel")})");
 
-                        var tasks = new List<Task>
-                        {
-                            proxyBuilder.SetLastProxyForUserAndChannel(p, user, c.Id),
-                            msg.DeleteAsync()
-                        };
-
+                        await proxyBuilder.SetLastProxyForUserAndChannel(p, user, c.Id);
                         if (!p.IsReset)
                         {
-                            tasks.Add(SendMessage(msg, text, p));
+                            await SendMessage(msg, text, p);
                         }
 
-                        await Task.WhenAll(tasks);
+                        await msg.DeleteAsync();
                     }
                     catch (Exception ex)
                     {
@@ -84,6 +80,19 @@ namespace DiscordMultiRP.Bot.Proxy
                     username: $"{proxy.Name} [{msg.Author.Username}]",
                     embeds: msg.Embeds,
                     avatarUrl: msg.Author.GetAvatarUrl());
+
+                if (msg.Attachments.Any())
+                {
+                    foreach (var a in msg.Attachments)
+                    {
+                        // TODO: Single multipart request
+                        var stream = await new HttpClient().GetStreamAsync(a.Url);
+                        await hc.SendFileAsync(stream, a.Filename, "",
+                            embeds: msg.Embeds,
+                            username: proxy.Name,
+                            avatarUrl: msg.Author.GetAvatarUrl());
+                    }
+                }
             }
         }
 

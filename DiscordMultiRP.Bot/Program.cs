@@ -27,12 +27,12 @@ namespace DiscordMultiRP.Bot
         public static async Task Main(string[] args)
         {
             var cfg = new ConfigurationBuilder()
-                .AddEnvironmentVariables("DMRP-")
                 .AddJsonFile(j =>
                 {
                     j.Path = "appsettings.json";
                     j.Optional = true;
                 })
+                .AddEnvironmentVariables()
                 .Build();
             log.Debug("Starting DiscordMultiRP");
             await new Program(cfg).Run();
