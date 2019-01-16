@@ -1,5 +1,5 @@
 ﻿@using DiscordMultiRP.Bot.Data
-@model IEnumerable<DiscordMultiRP.Bot.Data.Proxy>
+@model IEnumerable<ProxyViewModel>
 
 @{
     ViewData["Title"] = "Index";
@@ -17,7 +17,7 @@
             @if (user?.IsAllowedGlobal ?? false)
             {
                 <th>
-                    @Html.DisplayNameFor(model => model.User.DiscordId)
+                    @Html.DisplayNameFor(model => model.UserName)
                 </th>
             }
             <th>
@@ -47,7 +47,7 @@
             @if (user.Role == Role.Admin)
             {
                 <td>
-                    @Html.DisplayFor(modelItem => item.User.DiscordId)
+                    @Html.DisplayFor(modelItem => item.UserName)
                 </td>
             }
             <td>

@@ -8,6 +8,7 @@ using System.Xml.Xsl;
 using Discord;
 using Discord.WebSocket;
 using DiscordMultiRP.Bot.Data;
+using Microsoft.Extensions.Configuration;
 using NLog;
 
 namespace DiscordMultiRP.Bot.Proxy
@@ -17,14 +18,21 @@ namespace DiscordMultiRP.Bot.Proxy
         private static readonly Logger log = LogManager.GetCurrentClassLogger();
 
         private readonly IProxyBuilder proxyBuilder;
+        private readonly IConfiguration cfg;
         private readonly RegexCache regexCache;
         private readonly WebhookCache webhookCache;
+        private readonly string avatarBaseUrl;
 
-        public UserProxy(DiscordSocketClient discord, IProxyBuilder proxyBuilder)
+        public UserProxy(DiscordSocketClient discord, IProxyBuilder proxyBuilder, IConfiguration cfg)
         {
             this.proxyBuilder = proxyBuilder;
+            this.cfg = cfg;
             regexCache = new RegexCache();
             webhookCache = new WebhookCache(discord);
+
+            var host = cfg["bot-url"];
+            host += host.EndsWith('/') ? string.Empty : "/";
+            avatarBaseUrl = $"{host}/Proxies/Avatar";
         }
 
         public async Task HandleMessage(SocketMessage msg)
@@ -75,11 +83,15 @@ namespace DiscordMultiRP.Bot.Proxy
 
             if (!proxy.IsReset)
             {
+                var avatarUrl = !string.IsNullOrWhiteSpace(proxy.AvatarContentType)
+                    ? $"{avatarBaseUrl}/{proxy.Id}"
+                    : msg.Author.GetAvatarUrl();
+
                 var hc = await webhookCache.GetWebhook(c);
                 await hc.SendMessageAsync(text,
                     username: $"{proxy.Name} [{msg.Author.Username}]",
                     embeds: msg.Embeds,
-                    avatarUrl: msg.Author.GetAvatarUrl());
+                    avatarUrl: avatarUrl);
 
                 if (msg.Attachments.Any())
                 {
@@ -90,7 +102,7 @@ namespace DiscordMultiRP.Bot.Proxy
                         await hc.SendFileAsync(stream, a.Filename, "",
                             embeds: msg.Embeds,
                             username: proxy.Name,
-                            avatarUrl: msg.Author.GetAvatarUrl());
+                            avatarUrl: avatarUrl);
                     }
                 }
             }

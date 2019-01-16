@@ -9,8 +9,11 @@ namespace DiscordMultiRP.Bot.Data
         public int Id { get; set; }
 
         public string Name { get; set; }
+        public string AvatarContentType { get; set; }
+
         public string Prefix { get; set; }
         public string Suffix { get; set; }
+        
         public bool IsReset { get; set; }
         public bool IsGlobal { get; set; }
 

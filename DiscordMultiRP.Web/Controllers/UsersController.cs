@@ -29,6 +29,11 @@ namespace DiscordMultiRP.Web.Controllers
         public async Task<IActionResult> Index()
         {
             var discord = await discordHelper.LoginBot();
+            if (discord == null)
+            {
+                return NotFound("Can't connect to Discord.");
+            }
+
             var dUsers = discord.Guilds.SelectMany(g => g.Users).Distinct().ToList();
             var dbUsers = await db.Users.ToListAsync();
             var modelUsers = dbUsers.Select(u => new UserViewModel(u, dUsers.FirstOrDefault(d => d.Id == u.DiscordId)));
@@ -58,6 +63,11 @@ namespace DiscordMultiRP.Web.Controllers
         public async Task<IActionResult> Create()
         {
             var discord = await discordHelper.LoginBot();
+            if (discord == null)
+            {
+                return NotFound("Can't connect to Discord.");
+            }
+
             var dUsers = discord.Guilds.SelectMany(g => g.Users).Distinct().ToList();
             var dbUsers = await db.Users.ToListAsync();
             var modelUsers = dUsers

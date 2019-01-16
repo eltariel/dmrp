@@ -25,5 +25,7 @@ namespace DiscordMultiRP.Bot.Data
         public ICollection<UserChannel> Channels { get; set; }
 
         public bool IsAllowedGlobal => Role == Role.Admin || Role == Role.Global;
+
+        public bool IsAdmin => Role == Role.Admin;
     }
 }

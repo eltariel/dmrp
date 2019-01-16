@@ -49,7 +49,7 @@ namespace DiscordMultiRP.Bot
 
             var pc = new EfProxyBuilder(cfg);
 
-            proxy = new UserProxy(discord, pc);
+            proxy = new UserProxy(discord, pc, cfg);
 
             discord.Log += Log;
             discord.Ready += OnReady;

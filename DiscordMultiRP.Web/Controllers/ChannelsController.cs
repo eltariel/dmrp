@@ -10,9 +10,11 @@ using Microsoft.EntityFrameworkCore;
 using DiscordMultiRP.Bot.Data;
 using DiscordMultiRP.Web.Models;
 using DiscordMultiRP.Web.Util;
+using Microsoft.AspNetCore.Authorization;
 
 namespace DiscordMultiRP.Web.Controllers
 {
+    [Authorize]
     public class ChannelsController : Controller
     {
         private readonly ProxyDataContext db;
@@ -28,6 +30,11 @@ namespace DiscordMultiRP.Web.Controllers
         public async Task<IActionResult> Index()
         {
             var discord = await discordHelper.LoginBot();
+            if (discord == null)
+            {
+                return NotFound("Can't connect to Discord.");
+            }
+
             var discordChannels = discord.Guilds.SelectMany(g => g.Channels).OfType<ITextChannel>();
             var channels = (await db.Channels.ToListAsync())
                 .Select(c => new ChannelViewModel(c, discordChannels.FirstOrDefault(dc => dc.Id == c.DiscordId)));
@@ -57,6 +64,11 @@ namespace DiscordMultiRP.Web.Controllers
         public async Task<IActionResult> Create()
         {
             var discord = await discordHelper.LoginBot();
+            if (discord == null)
+            {
+                return NotFound("Can't connect to Discord.");
+            }
+
             var dbChannels = await db.Channels.ToListAsync();
             var availableChannels = discord.Guilds
                 .SelectMany(g => g.Channels.Where(dc => dbChannels.All(c => c.DiscordId != dc.Id)), (g, c) => new{g, c})

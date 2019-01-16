@@ -10,22 +10,22 @@
     <h4>Proxy</h4>
     <hr />
     <dl class="row">
-        <dt class = "col-sm-2">
+        <dt class="col-sm-2">
             @Html.DisplayNameFor(model => model.Name)
         </dt>
-        <dd class = "col-sm-10">
+        <dd class="col-sm-10">
             @Html.DisplayFor(model => model.Name)
         </dd>
-        <dt class = "col-sm-2">
+        <dt class="col-sm-2">
             @Html.DisplayNameFor(model => model.Prefix)
         </dt>
-        <dd class = "col-sm-10">
+        <dd class="col-sm-10">
             @Html.DisplayFor(model => model.Prefix)
         </dd>
-        <dt class = "col-sm-2">
+        <dt class="col-sm-2">
             @Html.DisplayNameFor(model => model.Suffix)
         </dt>
-        <dd class = "col-sm-10">
+        <dd class="col-sm-10">
             @Html.DisplayFor(model => model.Suffix)
         </dd>
         @if (ViewBag.User.IsAllowedGlobal)
@@ -37,6 +37,12 @@
                 @Html.DisplayFor(model => model.IsGlobal)
             </dd>
         }
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.AvatarContentType)
+        </dt>
+        <dd class="col-sm-10">
+            <img src="@Url.Action("Avatar", new{id = Model.Id})" alt="Avatar for @Model.Name" />
+        </dd>
     </dl>
 </div>
 <div>

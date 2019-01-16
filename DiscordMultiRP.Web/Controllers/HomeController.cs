@@ -5,9 +5,11 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using DiscordMultiRP.Web.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace DiscordMultiRP.Web.Controllers
 {
+    [AllowAnonymous]
     public class HomeController : Controller
     {
         public IActionResult Index()
