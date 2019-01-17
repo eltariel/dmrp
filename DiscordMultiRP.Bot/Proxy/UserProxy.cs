@@ -30,9 +30,9 @@ namespace DiscordMultiRP.Bot.Proxy
             regexCache = new RegexCache();
             webhookCache = new WebhookCache(discord);
 
-            var host = cfg["bot-url"];
+            var host = cfg["bot-url"] ?? "http://localhost";
             host += host.EndsWith('/') ? string.Empty : "/";
-            avatarBaseUrl = $"{host}/Proxies/Avatar";
+            avatarBaseUrl = $"{host}Proxies/Avatar";
         }
 
         public async Task HandleMessage(SocketMessage msg)

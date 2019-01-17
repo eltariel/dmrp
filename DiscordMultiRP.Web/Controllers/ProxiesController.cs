@@ -95,6 +95,7 @@ namespace DiscordMultiRP.Web.Controllers
             return View(proxy);
         }
 
+        [AllowAnonymous]
         public async Task<IActionResult> Avatar(int id)
         {
             var proxy = await db.Proxies.FirstOrDefaultAsync(p => p.Id == id);
@@ -193,7 +194,7 @@ namespace DiscordMultiRP.Web.Controllers
                 var proxy = new Proxy
                 {
                     Name = pvm.Name,
-                    AvatarContentType = pvm.Avatar.ContentType,
+                    AvatarContentType = pvm.Avatar?.ContentType,
                     Prefix = pvm.Prefix,
                     Suffix = pvm.Suffix,
                     IsGlobal = pvm.IsGlobal,
@@ -347,7 +348,7 @@ namespace DiscordMultiRP.Web.Controllers
         {
             if (!pvm.IsGlobal)
             {
-                if (pvm.Channels.Any())
+                if (pvm.Channels?.Any() ?? false)
                 {
                     var dbChannels = await db.Channels
                         .Where(c => pvm.Channels.Contains(c.DiscordId))
@@ -379,8 +380,9 @@ namespace DiscordMultiRP.Web.Controllers
 
         private async Task UpdateAvatar(ProxyViewModel pvm, Proxy proxy)
         {
-            if (pvm.Avatar.Length > 0)
+            if ((pvm.Avatar?.Length ?? 0) > 0)
             {
+                Directory.CreateDirectory(avatarPath);
                 DeleteExistingAvatars(pvm.Id);
                 proxy.AvatarContentType = pvm.Avatar.ContentType;
 
