@@ -35,9 +35,13 @@ namespace DiscordMultiRP.Web.Controllers
                 return NotFound("Can't connect to Discord.");
             }
 
-            var discordChannels = discord.Guilds.SelectMany(g => g.Channels).OfType<ITextChannel>();
-            var channels = (await db.Channels.ToListAsync())
-                .Select(c => new ChannelViewModel(c, discordChannels.FirstOrDefault(dc => dc.Id == c.DiscordId)));
+            var discordChannels = discord.Guilds
+                .SelectMany(g => g.TextChannels)
+                .OrderBy(c => c.Guild.Name)
+                .ThenBy(c => c.Name);
+            var dbChannels = await db.Channels.ToListAsync();
+            var channels = discordChannels.Select(c =>
+                new ChannelViewModel(dbChannels.FirstOrDefault(d => d.DiscordId == c.Id), c));
 
             return View(channels);
         }
@@ -61,7 +65,7 @@ namespace DiscordMultiRP.Web.Controllers
         }
 
         // GET: Channels/Create
-        public async Task<IActionResult> Create()
+        public async Task<IActionResult> Create(ulong id)
         {
             var discord = await discordHelper.LoginBot();
             if (discord == null)
@@ -71,9 +75,13 @@ namespace DiscordMultiRP.Web.Controllers
 
             var dbChannels = await db.Channels.ToListAsync();
             var availableChannels = discord.Guilds
-                .SelectMany(g => g.Channels.Where(dc => dbChannels.All(c => c.DiscordId != dc.Id)), (g, c) => new{g, c})
-                .Select(i => new SelectListItem($"{i.g.Name}: {i.c.Name}", $"{i.c.Id}"))
-                .Distinct();
+                .SelectMany(g => g.TextChannels.Where(dc => dbChannels.All(c => c.DiscordId != dc.Id)))
+                .OrderBy(c => c.Guild.Name)
+                .ThenBy(c => c.Name)
+                .Select(c => new SelectListItem(
+                    $"{c.Guild.Name}: {c.Name}",
+                    $"{c.Id}",
+                    c.Id == id));
 
             ViewBag.Channels = availableChannels;
             return View();

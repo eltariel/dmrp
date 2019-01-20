@@ -5,18 +5,33 @@ namespace DiscordMultiRP.Web.Models
 {
     public class ChannelViewModel
     {
-        private readonly Channel dbChannel;
-        private readonly ITextChannel discordChannel;
-
         public ChannelViewModel(Channel dbChannel, ITextChannel discordChannel)
         {
-            this.dbChannel = dbChannel;
-            this.discordChannel = discordChannel;
+            DiscordId = discordChannel.Id;
+            GuildName = discordChannel.Guild.Name;
+            ChannelName = discordChannel.Name;
+
+            if (dbChannel != null)
+            {
+                IsRegistered = true;
+                IsMonitored = dbChannel.IsMonitored;
+                DatabaseId = dbChannel.Id;
+            }
+            else
+            {
+                IsMonitored = false;
+            }
         }
 
-        public ulong DiscordId => dbChannel.DiscordId;
-        public bool IsMonitored => dbChannel.IsMonitored;
-        public int Id => dbChannel.Id;
-        public string Name => $"{discordChannel.Guild.Name}: {discordChannel.Name}";
+        public int? DatabaseId { get; }
+        public ulong DiscordId { get; }
+
+        public bool IsRegistered { get; set; }
+        public bool IsMonitored { get; set; }
+
+        public string GuildName { get; }
+        public string ChannelName { get; }
+
+        public string FullName => $"{GuildName}: {ChannelName}";
     }
 }

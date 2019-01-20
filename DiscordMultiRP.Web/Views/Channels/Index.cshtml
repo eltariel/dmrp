@@ -13,13 +13,16 @@
     <thead>
         <tr>
             <th>
-                @Html.DisplayNameFor(model => model.Name)
+                @Html.DisplayNameFor(model => model.FullName)
             </th>
             <th>
                 @Html.DisplayNameFor(model => model.DiscordId)
             </th>
             <th>
                 @Html.DisplayNameFor(model => model.IsMonitored)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.IsRegistered)
             </th>
             <th></th>
         </tr>
@@ -28,7 +31,7 @@
 @foreach (var item in Model) {
         <tr>
             <td>
-                @Html.DisplayFor(modelItem => item.Name)
+                @Html.DisplayFor(modelItem => item.FullName)
             </td>
             <td>
                 @Html.DisplayFor(modelItem => item.DiscordId)
@@ -37,10 +40,22 @@
                 @Html.DisplayFor(modelItem => item.IsMonitored)
             </td>
             <td>
-                <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
+                @Html.DisplayFor(modelItem => item.IsRegistered)
             </td>
+            @if (item.IsRegistered)
+            {
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.DatabaseId">Edit</a> |
+                    <a asp-action="Details" asp-route-id="@item.DatabaseId">Details</a> |
+                    <a asp-action="Delete" asp-route-id="@item.DatabaseId">Delete</a>
+                </td>
+            }
+            else
+            {
+                <td>
+                    <a asp-action="Create" asp-route-id="@item.DiscordId">Create</a>
+                </td>
+            }
         </tr>
 }
     </tbody>

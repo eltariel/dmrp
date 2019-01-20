@@ -43,8 +43,9 @@ namespace DiscordMultiRP.Web.Controllers
             ViewBag.User = user;
 
             var contextProxies = await (user.IsAdmin
-                ? db.Proxies.Include(p => p.User)
-                : db.Proxies.Where(p => p.User.DiscordId == id)).ToListAsync();
+                    ? db.Proxies.Include(p => p.User)
+                    : db.Proxies.Where(p => p.User.DiscordId == id))
+                .ToListAsync();
 
             IEnumerable<ProxyViewModel> pvms;
             if (user.IsAdmin)
@@ -69,7 +70,10 @@ namespace DiscordMultiRP.Web.Controllers
                 pvms = contextProxies.Select(p => new ProxyViewModel(p));
             }
 
-            return View(pvms.ToList());
+            return View(pvms.OrderBy(p => p.UserId != user.Id)
+                .ThenBy(p => p.UserName)
+                .ThenBy(p => p.Name)
+                .ToList());
         }
 
         // GET: Proxies/Details/5
@@ -92,7 +96,16 @@ namespace DiscordMultiRP.Web.Controllers
                 return NotFound();
             }
 
-            return View(proxy);
+            var discord = await discordHelper.LoginBot();
+            var discordUser = discord.GetUser(DiscordUserId);
+            var channels = discordUser
+                .MutualGuilds
+                .SelectMany(g => g.TextChannels)
+                .Where(c => proxy.Channels.Select(pc => pc.Channel.DiscordId).Contains(c.Id))
+                .ToList();
+            var pvm = new ProxyViewModel(proxy, $"{discordUser.Username}#{discordUser.Discriminator}", channels);
+
+            return View(pvm);
         }
 
         [AllowAnonymous]
@@ -202,7 +215,11 @@ namespace DiscordMultiRP.Web.Controllers
                     User = proxyUser,
                 };
 
-                await UpdateProxyChannels(proxy, pvm);
+                if (!await UpdateProxyChannels(proxy, pvm))
+                {
+                    return Forbid();
+                }
+
                 await UpdateAvatar(pvm, proxy);
 
                 db.Add(proxy);
@@ -286,7 +303,11 @@ namespace DiscordMultiRP.Web.Controllers
                         proxy.Prefix = pvm.Prefix;
                         proxy.Suffix = pvm.Suffix;
 
-                        await UpdateProxyChannels(proxy, pvm);
+                        if (!await UpdateProxyChannels(proxy, pvm))
+                        {
+                            return Forbid();
+                        }
+
                         await UpdateAvatar(pvm, proxy);
 
                         db.Update(proxy);
@@ -344,7 +365,7 @@ namespace DiscordMultiRP.Web.Controllers
             return db.Proxies.Any(e => e.Id == id);
         }
 
-        private async Task UpdateProxyChannels(Proxy proxy, ProxyViewModel pvm)
+        private async Task<bool> UpdateProxyChannels(Proxy proxy, ProxyViewModel pvm)
         {
             if (!pvm.IsGlobal)
             {
@@ -352,23 +373,29 @@ namespace DiscordMultiRP.Web.Controllers
                 {
                     var dbChannels = await db.Channels
                         .Where(c => pvm.Channels.Contains(c.DiscordId))
-                        .DefaultIfEmpty()
                         .ToListAsync();
 
                     proxy.Channels = pvm.Channels
                         .Select(id => new ProxyChannel
                         {
                             Channel = dbChannels.FirstOrDefault(dc => dc.DiscordId == id) ??
-                                      new Channel { DiscordId = id, IsMonitored = true },
+                                      new Channel { DiscordId = id, IsMonitored = proxy.User.IsAdmin },
                             Proxy = proxy
                         })
                         .ToList();
+
+                    if (!proxy.User.IsAdmin && proxy.Channels.Select(c => c.Channel).Any(c => !c.IsMonitored))
+                    {
+                        return false;
+                    }
                 }
             }
             else
             {
                 proxy.Channels.Clear();
             }
+
+            return true;
         }
 
         private async Task<User> GetDbUser()
