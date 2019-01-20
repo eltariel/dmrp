@@ -376,6 +376,7 @@ namespace DiscordMultiRP.Web.Controllers
                         .ToListAsync();
 
                     proxy.Channels = pvm.Channels
+                        .DefaultIfEmpty()
                         .Select(id => new ProxyChannel
                         {
                             Channel = dbChannels.FirstOrDefault(dc => dc.DiscordId == id) ??
