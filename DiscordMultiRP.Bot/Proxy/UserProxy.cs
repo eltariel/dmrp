@@ -88,22 +88,27 @@ namespace DiscordMultiRP.Bot.Proxy
                     : msg.Author.GetAvatarUrl();
 
                 var hc = await webhookCache.GetWebhook(c);
-                await hc.SendMessageAsync(text,
-                    username: $"{proxy.Name} [{msg.Author.Username}]",
-                    embeds: msg.Embeds,
-                    avatarUrl: avatarUrl);
 
                 if (msg.Attachments.Any())
                 {
+                    var first = true;
                     foreach (var a in msg.Attachments)
                     {
                         // TODO: Single multipart request
                         var stream = await new HttpClient().GetStreamAsync(a.Url);
-                        await hc.SendFileAsync(stream, a.Filename, "",
+                        await hc.SendFileAsync(stream, a.Filename, first?text:string.Empty,
                             embeds: msg.Embeds,
                             username: proxy.Name,
                             avatarUrl: avatarUrl);
+                        first = false;
                     }
+                }
+                else
+                {
+                    await hc.SendMessageAsync(text,
+                        username: $"{proxy.Name} [{msg.Author.Username}]",
+                        embeds: msg.Embeds,
+                        avatarUrl: avatarUrl);
                 }
             }
         }
