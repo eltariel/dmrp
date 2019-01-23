@@ -10,10 +10,10 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net.Mime;
 using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
+using Microsoft.AspNetCore.Mvc.Filters;
 using static MoreLinq.Extensions.DistinctByExtension;
 
 namespace DiscordMultiRP.Web.Controllers
@@ -25,6 +25,8 @@ namespace DiscordMultiRP.Web.Controllers
         private readonly IConfiguration cfg;
         private readonly DiscordHelper discordHelper;
         private readonly string avatarPath = Path.Combine(Environment.GetEnvironmentVariable("home"), "dmrp", "avatars");
+        private DiscordSocketClient discord;
+        private User dbUser;
 
         public ProxiesController(ProxyDataContext db, IConfiguration cfg, DiscordHelper discordHelper)
         {
@@ -38,24 +40,14 @@ namespace DiscordMultiRP.Web.Controllers
         // GET: Proxies
         public async Task<IActionResult> Index()
         {
-            var id = DiscordUserId;
-            var user = await db.Users.FirstOrDefaultAsync(u => u.DiscordId == id);
-            ViewBag.User = user;
-
-            var contextProxies = await (user.IsAdmin
+            var contextProxies = await (dbUser.IsAdmin
                     ? db.Proxies.Include(p => p.User)
-                    : db.Proxies.Where(p => p.User.DiscordId == id))
+                    : db.Proxies.Where(p => p.User.DiscordId == DiscordUserId))
                 .ToListAsync();
 
             IEnumerable<ProxyViewModel> pvms;
-            if (user.IsAdmin)
+            if (dbUser.IsAdmin)
             {
-                var discord = await discordHelper.LoginBot();
-                if (discord == null)
-                {
-                    ViewBag.DiscordUnavailable = true;
-                }
-
                 pvms = contextProxies.Select(p =>
                 {
                     var username = discord?.GetUser(p.User.DiscordId) is IUser du
@@ -70,7 +62,7 @@ namespace DiscordMultiRP.Web.Controllers
                 pvms = contextProxies.Select(p => new ProxyViewModel(p));
             }
 
-            return View(pvms.OrderBy(p => p.UserId != user.Id)
+            return View(pvms.OrderBy(p => p.UserId != dbUser.Id)
                 .ThenBy(p => p.UserName)
                 .ThenBy(p => p.Name)
                 .ToList());
@@ -84,9 +76,6 @@ namespace DiscordMultiRP.Web.Controllers
                 return NotFound();
             }
 
-            var dbUser = await GetDbUser();
-            ViewBag.User = dbUser;
-
             var proxy = await db.Proxies
                 .Include(p => p.User)
                 .Include(p => p.Channels).ThenInclude(pc => pc.Channel)
@@ -96,7 +85,6 @@ namespace DiscordMultiRP.Web.Controllers
                 return NotFound();
             }
 
-            var discord = await discordHelper.LoginBot();
             var discordUser = discord.GetUser(DiscordUserId);
             var channels = discordUser
                 .MutualGuilds
@@ -129,34 +117,26 @@ namespace DiscordMultiRP.Web.Controllers
         // GET: Proxies/Create
         public async Task<IActionResult> Create()
         {
-            var dbUser = await GetDbUser();
-            ViewBag.User = dbUser;
-            var discord = await discordHelper.LoginBot();
-            if (discord == null)
-            {
-                ViewBag.DiscordUnavailable = true;
-            }
-
-            var user = discord.GetUser(DiscordUserId);
-            var myChannels = user
+            var discordUser = discord.GetUser(DiscordUserId);
+            var myChannels = discordUser
                 .MutualGuilds
                 .SelectMany(g => g.TextChannels)
                 .ToList();
 
             if (dbUser.IsAdmin)
             {
-                var otherUsers = user
+                var otherUsers = discordUser
                     .MutualGuilds
                     .SelectMany(g => g.Users)
                     .DistinctBy(u => u.Id)
                     .ToList();
 
                 var visibleUsers = otherUsers.OrderBy(u => u.Username)
-                    .Prepend(user)
+                    .Prepend(discordUser)
                     .Select(u => new SelectListItem(
-                        $"{u.Username}#{u.DiscriminatorValue}",
+                        $"{u.Username}#{u.Discriminator}",
                         $"{u.Id}",
-                        u.Id == user.Id));
+                        u.Id == discordUser.Id));
 
                 var channelsByUser = otherUsers
                     .ToDictionary(
@@ -171,7 +151,7 @@ namespace DiscordMultiRP.Web.Controllers
                 ViewBag.ChannelsByUser = channelsByUser;
             }
 
-            ViewBag.Channels = myChannels.Select(c => new SelectListItem($"{c.Guild.Name}: {c.Name}", $"{c.Id}")); ;
+            ViewBag.Channels = myChannels.Select(c => new SelectListItem($"{c.Guild.Name}: {c.Name}", $"{c.Id}"));
 
             return View();
         }
@@ -183,26 +163,26 @@ namespace DiscordMultiRP.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Id,UserDiscordId,Name,Prefix,Suffix,IsReset,IsGlobal,Channels,Avatar")] ProxyViewModel pvm)
         {
+            //var (discord, dbUser) = await CommonSetup();
             if (ModelState.IsValid)
             {
-                var user = await GetDbUser();
-                if (user == null || user.Role == Role.None)
+                if (dbUser == null || dbUser.Role == Role.None)
                 {
                     return Forbid();
                 }
 
-                if (!user.IsAdmin && pvm.UserDiscordId != user.DiscordId)
+                if (!dbUser.IsAdmin && pvm.UserDiscordId != dbUser.DiscordId)
                 {
                     return Forbid();
                 }
 
-                if (!user.IsAllowedGlobal)
+                if (!dbUser.IsAllowedGlobal)
                 {
                     pvm.IsGlobal = false;
                 }
 
                 var proxyUser = await db.Users.FirstOrDefaultAsync(u => u.DiscordId == pvm.UserDiscordId) ??
-                                new User { DiscordId = pvm.UserDiscordId };
+                                new User {DiscordId = pvm.UserDiscordId};
 
                 var proxy = new Proxy
                 {
@@ -247,9 +227,6 @@ namespace DiscordMultiRP.Web.Controllers
                 return NotFound();
             }
 
-            ViewBag.User = await GetDbUser();
-
-            var discord = await discordHelper.LoginBot();
             if (discord == null)
             {
                 return NotFound("Can't connect to Discord.");
@@ -280,10 +257,9 @@ namespace DiscordMultiRP.Web.Controllers
             {
                 try
                 {
-                    var user = await GetDbUser();
-                    if (user != null)
+                    if (dbUser != null)
                     {
-                        if (!user.IsAllowedGlobal)
+                        if (!dbUser.IsAllowedGlobal)
                         {
                             pvm.IsGlobal = false;
                         }
@@ -325,8 +301,10 @@ namespace DiscordMultiRP.Web.Controllers
                         throw;
                     }
                 }
+
                 return RedirectToAction(nameof(Index));
             }
+
             return View(pvm);
         }
 
@@ -345,6 +323,11 @@ namespace DiscordMultiRP.Web.Controllers
                 return NotFound();
             }
 
+            if (dbUser.Id != proxy.User.Id && !dbUser.IsAdmin)
+            {
+                return Forbid();
+            }
+
             return View(proxy);
         }
 
@@ -354,10 +337,61 @@ namespace DiscordMultiRP.Web.Controllers
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var proxy = await db.Proxies.FindAsync(id);
+            if (proxy == null)
+            {
+                return NotFound();
+            }
+
+            if (dbUser.Id != proxy.User.Id && !dbUser.IsAdmin)
+            {
+                return Forbid();
+            }
+
             db.Proxies.Remove(proxy);
             await db.SaveChangesAsync();
             DeleteExistingAvatars(id);
             return RedirectToAction(nameof(Index));
+        }
+
+        public override async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
+        {
+            try
+            {
+                (discord, dbUser) = await CommonSetup();
+                var resultContext = await next();
+            }
+            catch (UnauthorizedAccessException uaex)
+            {
+                context.Result = Unauthorized(uaex);
+            }
+        }
+
+        private async Task<(DiscordSocketClient discord, User user)> CommonSetup()
+        {
+            var discord = await discordHelper.LoginBot();
+            if (discord == null)
+            {
+                ViewBag.DiscordUnavailable = true;
+            }
+
+            var user = await GetDbUser();
+            if (user == null)
+            {
+                if (discord?.GetUser(DiscordUserId)?.MutualGuilds.Any() ?? false)
+                {
+                    user = new User {DiscordId = DiscordUserId, Role = Role.User};
+                    db.Users.Add(user);
+                    await db.SaveChangesAsync();
+                }
+                else
+                {
+                    throw new UnauthorizedAccessException($"Unknown user {DiscordUserId}.");
+                }
+            }
+
+            ViewBag.User = user;
+
+            return (discord, user);
         }
 
         private bool ProxyExists(int id)
@@ -393,7 +427,7 @@ namespace DiscordMultiRP.Web.Controllers
             }
             else
             {
-                proxy.Channels.Clear();
+                proxy.Channels?.Clear();
             }
 
             return true;

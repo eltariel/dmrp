@@ -15,8 +15,8 @@ namespace DiscordMultiRP.Web.Models
         }
 
         public int Id => db.Id;
-        public ulong DiscordId => discord.Id;
-        public string Name => discord.Username;
+        public ulong DiscordId => discord?.Id ?? db?.DiscordId ?? 0;
+        public string Name => discord?.Username ?? $"[Unknown user]";
         public Role Role => db.Role;
     }
 }
