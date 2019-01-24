@@ -187,5 +187,36 @@ namespace DiscordMultiRP.Web.Controllers
         {
             return db.Channels.Any(e => e.Id == id);
         }
+
+        public async Task<IActionResult> Message(int id)
+        {
+            var dbChannel = await db.Channels.FirstOrDefaultAsync(c => c.Id == id);
+            var discord = await discordHelper.LoginBot();
+
+            var discordChannel = discord.GetChannel(dbChannel.DiscordId) as ITextChannel;
+            return View(new SendChannelMessageViewModel
+            {
+                ChannelDiscordId = dbChannel.DiscordId,
+                ChannelDatabaseId = dbChannel.Id,
+                ChannelName = discordChannel?.Name,
+                GuildName = discordChannel?.Guild.Name,
+            });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Message(SendChannelMessageViewModel viewModel)
+        {
+            if (ModelState.IsValid)
+            {
+                var discord = await discordHelper.LoginBot();
+                var c = discord.GetChannel(viewModel.ChannelDiscordId);
+                if (c is ITextChannel tc)
+                {
+                    await tc.SendMessageAsync(viewModel.Message);
+                }
+            }
+
+            return RedirectToAction(nameof(Message), new { id = viewModel.ChannelDatabaseId });
+        }
     }
 }

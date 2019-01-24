@@ -55,7 +55,7 @@ namespace DiscordMultiRP.Bot
             discord.Ready += OnReady;
             discord.MessageReceived += OnMessage;
 
-            await discord.LoginAsync(TokenType.Bot, cfg["bot-token"]);
+            await discord.LoginAsync(TokenType.Bot, cfg["Discord:bot-token"]);
             log.Debug("Login complete");
             await discord.StartAsync();
             log.Debug("Started");

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Discord;
 using Discord.WebSocket;
@@ -17,7 +18,8 @@ namespace DiscordMultiRP.Web.Models
         {
             Id = proxy.Id;
             Name = proxy.Name;
-            HasAvatar = !string.IsNullOrWhiteSpace(proxy.AvatarContentType);
+            AvatarGuid = proxy.AvatarGuid;
+            HasAvatar = proxy.AvatarGuid != Guid.Empty && !string.IsNullOrWhiteSpace(proxy.AvatarContentType);
             Prefix = proxy.Prefix;
             Suffix = proxy.Suffix;
             IsReset = proxy.IsReset;
@@ -34,6 +36,7 @@ namespace DiscordMultiRP.Web.Models
 
         public string Name { get; set; }
         public bool HasAvatar { get; set; }
+        public Guid AvatarGuid { get; set; }
         public IFormFile Avatar { get; set; }
 
         public string Prefix { get; set; }

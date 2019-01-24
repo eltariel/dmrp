@@ -45,6 +45,7 @@
             @if (item.IsRegistered)
             {
                 <td>
+                    <a asp-action="Message" asp-route-id="@item.DatabaseId">Send Message</a> |
                     <a asp-action="Edit" asp-route-id="@item.DatabaseId">Edit</a> |
                     <a asp-action="Details" asp-route-id="@item.DatabaseId">Details</a> |
                     <a asp-action="Delete" asp-route-id="@item.DatabaseId">Delete</a>

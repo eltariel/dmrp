@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Discord.WebSocket;
 
@@ -9,6 +10,8 @@ namespace DiscordMultiRP.Bot.Data
         public int Id { get; set; }
 
         public string Name { get; set; }
+
+        public Guid AvatarGuid { get; set; }
         public string AvatarContentType { get; set; }
 
         public string Prefix { get; set; }
@@ -24,5 +27,7 @@ namespace DiscordMultiRP.Bot.Data
         public bool IsForChannel(SocketMessage msg) =>
             IsGlobal ||
             Channels.Any(c => c.Channel.IsMonitored && c.Channel.DiscordId == msg.Channel.Id);
+
+        public bool HasAvatar => AvatarGuid != Guid.Empty && !string.IsNullOrWhiteSpace(AvatarContentType);
     }
 }

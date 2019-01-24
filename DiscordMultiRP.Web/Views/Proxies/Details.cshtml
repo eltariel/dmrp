@@ -65,7 +65,7 @@
         <dd class="col-sm-10">
             @if (Model.HasAvatar)
             {
-                <img src="@Url.Action("Avatar", new {id = Model.Id})" alt="Avatar for @Model.Name"/>
+                <img src="@Url.Action("View", "Avatar", new {id = Model.AvatarGuid})" alt="Avatar for @Model.Name"/>
             }
             else
             {

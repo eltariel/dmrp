@@ -30,9 +30,9 @@ namespace DiscordMultiRP.Bot.Proxy
             regexCache = new RegexCache();
             webhookCache = new WebhookCache(discord);
 
-            var host = cfg["bot-url"] ?? "http://localhost";
+            var host = cfg["Discord:bot-url"] ?? "http://localhost";
             host += host.EndsWith('/') ? string.Empty : "/";
-            avatarBaseUrl = $"{host}Proxies/Avatar";
+            avatarBaseUrl = $"{host}Avatar/View";
         }
 
         public async Task HandleMessage(SocketMessage msg)
@@ -83,9 +83,11 @@ namespace DiscordMultiRP.Bot.Proxy
 
             if (!proxy.IsReset)
             {
-                var avatarUrl = !string.IsNullOrWhiteSpace(proxy.AvatarContentType)
-                    ? $"{avatarBaseUrl}/{proxy.Id}"
+                var avatarUrl = proxy.HasAvatar
+                    ? $"{avatarBaseUrl}/{proxy.AvatarGuid}"
                     : msg.Author.GetAvatarUrl();
+
+                log.Debug($"Proxy avatar url: {avatarUrl}");
 
                 var hc = await webhookCache.GetWebhook(c);
 

@@ -96,24 +96,6 @@ namespace DiscordMultiRP.Web.Controllers
             return View(pvm);
         }
 
-        [AllowAnonymous]
-        public async Task<IActionResult> Avatar(int id)
-        {
-            var proxy = await db.Proxies.FirstOrDefaultAsync(p => p.Id == id);
-            if (string.IsNullOrWhiteSpace(proxy?.AvatarContentType))
-            {
-                return NotFound();
-            }
-
-            var avatar = Directory.EnumerateFiles(avatarPath, $"{id}.*").FirstOrDefault();
-            if (avatar != null)
-            {
-                return PhysicalFile(avatar, proxy.AvatarContentType);
-            }
-
-            return NotFound();
-        }
-
         // GET: Proxies/Create
         public async Task<IActionResult> Create()
         {
@@ -187,6 +169,7 @@ namespace DiscordMultiRP.Web.Controllers
                 var proxy = new Proxy
                 {
                     Name = pvm.Name,
+                    AvatarGuid = pvm.Avatar != null ? Guid.NewGuid() : Guid.Empty,
                     AvatarContentType = pvm.Avatar?.ContentType,
                     Prefix = pvm.Prefix,
                     Suffix = pvm.Suffix,
@@ -446,6 +429,7 @@ namespace DiscordMultiRP.Web.Controllers
             {
                 Directory.CreateDirectory(avatarPath);
                 DeleteExistingAvatars(pvm.Id);
+                proxy.AvatarGuid = Guid.NewGuid();
                 proxy.AvatarContentType = pvm.Avatar.ContentType;
 
                 var ext = Path.GetExtension(pvm.Avatar.FileName);

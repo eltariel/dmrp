@@ -48,7 +48,7 @@ namespace DiscordMultiRP.Web.Util
 
         public static ulong GetDiscordUserIdFor(ClaimsPrincipal user)
         {
-            return UInt64.Parse(user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value ?? "0");
+            return ulong.Parse(user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value ?? "0");
         }
     }
 }
