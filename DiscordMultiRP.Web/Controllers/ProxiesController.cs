@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.Extensions.Logging;
 using static MoreLinq.Extensions.DistinctByExtension;
 
 namespace DiscordMultiRP.Web.Controllers
@@ -24,15 +25,17 @@ namespace DiscordMultiRP.Web.Controllers
         private readonly ProxyDataContext db;
         private readonly IConfiguration cfg;
         private readonly DiscordHelper discordHelper;
+        private readonly ILogger<ProxiesController> logger;
         private readonly string avatarPath = Path.Combine(Environment.GetEnvironmentVariable("home"), "dmrp", "avatars");
         private DiscordSocketClient discord;
         private User dbUser;
 
-        public ProxiesController(ProxyDataContext db, IConfiguration cfg, DiscordHelper discordHelper)
+        public ProxiesController(ProxyDataContext db, IConfiguration cfg, DiscordHelper discordHelper, ILogger<ProxiesController> logger)
         {
             this.db = db;
             this.cfg = cfg;
             this.discordHelper = discordHelper;
+            this.logger = logger;
         }
 
         private ulong DiscordUserId => DiscordHelper.GetDiscordUserIdFor(User);
@@ -294,12 +297,14 @@ namespace DiscordMultiRP.Web.Controllers
         // GET: Proxies/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
-            if (id == null)
+            if ((id ?? 0) == 0)
             {
                 return NotFound();
             }
 
+            logger.LogDebug($"Delete request for user ID {id}");
             var proxy = await db.Proxies
+                .Include(p => p.User)
                 .FirstOrDefaultAsync(m => m.Id == id);
             if (proxy == null)
             {
@@ -319,7 +324,14 @@ namespace DiscordMultiRP.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var proxy = await db.Proxies.FindAsync(id);
+            if (id == 0)
+            {
+                return NotFound();
+            }
+
+            var proxy = await db.Proxies
+                .Include(p => p.User)
+                .FirstOrDefaultAsync(m => m.Id == id);
             if (proxy == null)
             {
                 return NotFound();
