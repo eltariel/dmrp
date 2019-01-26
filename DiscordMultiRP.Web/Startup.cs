@@ -63,6 +63,7 @@ namespace DiscordMultiRP.Web
 
             RegisterDiscordOAuth(services);
             services.AddScoped<DiscordHelper>();
+            services.AddScoped<AvatarHelper>();
         }
 
         private void RegisterDiscordOAuth(IServiceCollection services)

@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using DiscordMultiRP.Bot.Data;
+using DiscordMultiRP.Web.Util;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -14,17 +15,13 @@ namespace DiscordMultiRP.Web.Controllers
     {
         private readonly ProxyDataContext db;
         private readonly IConfiguration cfg;
-        private readonly string avatarPath;
+        private readonly AvatarHelper avatarHelper;
 
-        public AvatarController(ProxyDataContext db, IConfiguration cfg)
+        public AvatarController(ProxyDataContext db, IConfiguration cfg, AvatarHelper avatarHelper)
         {
             this.db = db;
             this.cfg = cfg;
-
-            var cfgAvatar = cfg["Discord:avatar-path"];
-            avatarPath = !string.IsNullOrWhiteSpace(cfgAvatar)
-                ? cfgAvatar
-                : Path.Combine(Environment.GetEnvironmentVariable("home"), "dmrp", "avatars");
+            this.avatarHelper = avatarHelper;
         }
 
         [AllowAnonymous]
@@ -37,12 +34,12 @@ namespace DiscordMultiRP.Web.Controllers
             }
 
             var proxy = await db.Proxies.FirstOrDefaultAsync(p => p.AvatarGuid == id);
-            if (string.IsNullOrWhiteSpace(proxy?.AvatarContentType))
+            if (!proxy.HasAvatar)
             {
                 return NotFound();
             }
 
-            var avatar = Directory.EnumerateFiles(avatarPath, $"{proxy.Id}.*").FirstOrDefault();
+            var avatar = avatarHelper.PathFor(proxy);
             if (avatar != null)
             {
                 return PhysicalFile(avatar, proxy.AvatarContentType);

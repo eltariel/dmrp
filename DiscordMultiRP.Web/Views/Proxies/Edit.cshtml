@@ -45,9 +45,23 @@
                 <label asp-for="Avatar" class="control-label"></label>
                 <input type="file" asp-for="Avatar" class="form-control"/>
                 <span asp-validation-for="Avatar" class="text-danger"></span>
+                @if (Model.HasAvatar)
+                {
+                    <a asp-action="RemoveAvatar" asp-route-id="@Model.Id">Remove Avatar</a>
+                }
             </div>
             <div class="form-group">
                 <input type="submit" value="Save" class="btn btn-primary" />
+            </div>
+            <div>
+            @if (Model.HasAvatar)
+            {
+                <img class="avatar" src="@Url.Action("View", "Avatar", new {id = Model.AvatarGuid})" alt="Avatar for @Model.Name"/>
+            }
+            else
+            {
+                <p>No avatar.</p>
+            }
             </div>
         </form>
     </div>

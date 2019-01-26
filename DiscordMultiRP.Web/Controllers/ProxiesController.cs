@@ -13,6 +13,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Logging;
 using static MoreLinq.Extensions.DistinctByExtension;
@@ -25,16 +26,17 @@ namespace DiscordMultiRP.Web.Controllers
         private readonly ProxyDataContext db;
         private readonly IConfiguration cfg;
         private readonly DiscordHelper discordHelper;
+        private readonly AvatarHelper avatarHelper;
         private readonly ILogger<ProxiesController> logger;
-        private readonly string avatarPath = Path.Combine(Environment.GetEnvironmentVariable("home"), "dmrp", "avatars");
         private DiscordSocketClient discord;
         private User dbUser;
 
-        public ProxiesController(ProxyDataContext db, IConfiguration cfg, DiscordHelper discordHelper, ILogger<ProxiesController> logger)
+        public ProxiesController(ProxyDataContext db, IConfiguration cfg, DiscordHelper discordHelper, AvatarHelper avatarHelper, ILogger<ProxiesController> logger)
         {
             this.db = db;
             this.cfg = cfg;
             this.discordHelper = discordHelper;
+            this.avatarHelper = avatarHelper;
             this.logger = logger;
         }
 
@@ -172,8 +174,6 @@ namespace DiscordMultiRP.Web.Controllers
                 var proxy = new Proxy
                 {
                     Name = pvm.Name,
-                    AvatarGuid = pvm.Avatar != null ? Guid.NewGuid() : Guid.Empty,
-                    AvatarContentType = pvm.Avatar?.ContentType,
                     Prefix = pvm.Prefix,
                     Suffix = pvm.Suffix,
                     IsGlobal = pvm.IsGlobal,
@@ -185,7 +185,7 @@ namespace DiscordMultiRP.Web.Controllers
                     return Forbid();
                 }
 
-                await UpdateAvatar(pvm, proxy);
+                await avatarHelper.UpdateAvatar(proxy, pvm.Avatar);
 
                 db.Add(proxy);
                 await db.SaveChangesAsync();
@@ -268,7 +268,7 @@ namespace DiscordMultiRP.Web.Controllers
                             return Forbid();
                         }
 
-                        await UpdateAvatar(pvm, proxy);
+                        await avatarHelper.UpdateAvatar(proxy, pvm.Avatar);
 
                         db.Update(proxy);
                         await db.SaveChangesAsync();
@@ -342,8 +342,24 @@ namespace DiscordMultiRP.Web.Controllers
 
             db.Proxies.Remove(proxy);
             await db.SaveChangesAsync();
-            DeleteExistingAvatars(id);
+            avatarHelper.DeleteExistingAvatars(proxy.AvatarGuid);
             return RedirectToAction(nameof(Index));
+        }
+
+        public async Task<IActionResult> RemoveAvatar(int id)
+        {
+            if (id <= 0)
+            {
+                return NotFound();
+            }
+
+            var proxy = await db.Proxies.FirstOrDefaultAsync(p => p.Id == id);
+            if (proxy != null)
+            {
+                await avatarHelper.DeleteAvatarFor(proxy);
+            }
+
+            return RedirectToAction(nameof(Edit), new { id });
         }
 
         public override async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
@@ -431,32 +447,6 @@ namespace DiscordMultiRP.Web.Controllers
             var user = await db.Users.FirstOrDefaultAsync(u => u.DiscordId == DiscordUserId);
             ViewBag.User = user;
             return user;
-        }
-
-        private async Task UpdateAvatar(ProxyViewModel pvm, Proxy proxy)
-        {
-            if ((pvm.Avatar?.Length ?? 0) > 0)
-            {
-                Directory.CreateDirectory(avatarPath);
-                DeleteExistingAvatars(pvm.Id);
-                proxy.AvatarGuid = Guid.NewGuid();
-                proxy.AvatarContentType = pvm.Avatar.ContentType;
-
-                var ext = Path.GetExtension(pvm.Avatar.FileName);
-                var avatar = Path.Combine(avatarPath, $"{pvm.Id}.{ext}");
-                using (var s = System.IO.File.Open(avatar, FileMode.Create))
-                {
-                    await pvm.Avatar.CopyToAsync(s);
-                }
-            }
-        }
-
-        private void DeleteExistingAvatars(int id)
-        {
-            foreach (var file in Directory.EnumerateFiles(avatarPath, $"{id}.*"))
-            {
-                System.IO.File.Delete(Path.Combine(avatarPath, file));
-            }
         }
     }
 }
