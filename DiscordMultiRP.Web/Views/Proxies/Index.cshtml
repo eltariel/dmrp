@@ -29,9 +29,6 @@
             <th>
                 @Html.DisplayNameFor(model => model.Suffix)
             </th>
-            <th>
-                @Html.DisplayNameFor(model => model.IsReset)
-            </th>
             @if (user?.IsAllowedGlobal ?? false)
             {
                 <th>
@@ -44,7 +41,7 @@
     <tbody>
 @foreach (var item in Model) {
         <tr>
-            @if (user.Role == Role.Admin)
+            @if (user?.Role == Role.Admin)
             {
                 <td>
                     @Html.DisplayFor(modelItem => item.UserName)
@@ -58,9 +55,6 @@
             </td>
             <td>
                 @Html.DisplayFor(modelItem => item.Suffix)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.IsReset)
             </td>
             @if (user?.IsAllowedGlobal ?? false)
             {

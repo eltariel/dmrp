@@ -1,4 +1,4 @@
-﻿using DiscordMultiRP.Bot.Proxy;
+﻿using DiscordMultiRP.Bot.ProxyResponder;
 using Microsoft.EntityFrameworkCore;
 
 namespace DiscordMultiRP.Bot.Data

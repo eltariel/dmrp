@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using NLog;
 
-namespace DiscordMultiRP.Bot.Proxy
+namespace DiscordMultiRP.Bot.ProxyResponder
 {
     public class EfProxyBuilder : IProxyBuilder
     {
@@ -43,7 +43,7 @@ namespace DiscordMultiRP.Bot.Proxy
             }
         }
 
-        public async Task<Data.Proxy> GetLastProxyForUserAndChannel(User user, ulong channelId)
+        public async Task<Proxy> GetLastProxyForUserAndChannel(User user, ulong channelId)
         {
             using (var db = GetDataContext())
             {
@@ -56,14 +56,11 @@ namespace DiscordMultiRP.Bot.Proxy
             }
         }
 
-        public async Task SetLastProxyForUserAndChannel(Data.Proxy proxy, User user, ulong channelId)
+        public async Task SetLastProxyForUserAndChannel(Proxy proxy, User user, ulong channelId)
         {
             using (var db = GetDataContext())
             {
-                var dbUser = await db.Users
-                    .Include(u => u.Channels).ThenInclude(c => c.Channel)
-                    .Include(u => u.Proxies)
-                    .FirstOrDefaultAsync(u => u.Id == user.Id);
+                var dbUser = await GetUser(db, user);
                 if (dbUser != null)
                 {
                     var uc = dbUser.Channels.FirstOrDefault(c => c.Channel.DiscordId == channelId);
@@ -78,11 +75,35 @@ namespace DiscordMultiRP.Bot.Proxy
                         dbUser.Channels.Add(uc);
                     }
 
-                    uc.LastProxy = proxy.IsReset ? null : dbUser.Proxies.FirstOrDefault(p => p.Id == proxy.Id);
+                    uc.LastProxy = dbUser.Proxies.FirstOrDefault(p => p.Id == proxy.Id);
                 }
 
                 await db.SaveChangesAsync();
             }
+        }
+
+        public async Task ClearLastProxyForUserAndChannel(User user, ulong channelId)
+        {
+            using (var db = GetDataContext())
+            {
+                var dbUser = await GetUser(db, user);
+                var uc = dbUser?.Channels.FirstOrDefault(c => c.Channel.DiscordId == channelId);
+                if (uc != null)
+                {
+                    uc.LastProxy = null;
+                }
+
+                await db.SaveChangesAsync();
+            }
+        }
+
+        private static async Task<User> GetUser(ProxyDataContext db, User user)
+        {
+            var dbUser = await db.Users
+                .Include(u => u.Channels).ThenInclude(c => c.Channel)
+                .Include(u => u.Proxies)
+                .FirstOrDefaultAsync(u => u.Id == user.Id);
+            return dbUser;
         }
 
         private ProxyDataContext GetDataContext()

@@ -6,7 +6,7 @@ using Discord;
 using Discord.WebSocket;
 using DiscordMultiRP.Bot.Data;
 using DiscordMultiRP.Bot.Dice;
-using DiscordMultiRP.Bot.Proxy;
+using DiscordMultiRP.Bot.ProxyResponder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using NLog;

@@ -1,4 +1,5 @@
-﻿@model DiscordMultiRP.Bot.Data.User
+﻿@using DiscordMultiRP.Bot.Data
+@model DiscordMultiRP.Bot.Data.User
 
 @{
     ViewData["Title"] = "Edit";
@@ -13,15 +14,17 @@
         <form asp-action="Edit">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <input type="hidden" asp-for="Id" />
-            <div class="form-group">
-                <label asp-for="DiscordId" class="control-label"></label>
-                <input asp-for="DiscordId" class="form-control" />
-                <span asp-validation-for="DiscordId" class="text-danger"></span>
-            </div>
+            <input type="hidden" asp-for="DiscordId" />
             <div class="form-group">
                 <label asp-for="Role" class="control-label"></label>
-                <input asp-for="Role" class="form-control" />
+                <select asp-for="Role" asp-items="Html.GetEnumSelectList<Role>()" class="form-control">
+                </select>
                 <span asp-validation-for="Role" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="ResetCommand" class="control-label"></label>
+                <input asp-for="ResetCommand" class="form-control"/>
+                <span asp-validation-for="ResetCommand" class="text-danger"></span>
             </div>
             <div class="form-group">
                 <input type="submit" value="Save" class="btn btn-primary" />

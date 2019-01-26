@@ -5,7 +5,7 @@ using Discord;
 using Discord.Webhook;
 using Discord.WebSocket;
 
-namespace DiscordMultiRP.Bot.Proxy
+namespace DiscordMultiRP.Bot.ProxyResponder
 {
     public class WebhookCache
     {

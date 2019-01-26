@@ -20,6 +20,8 @@ namespace DiscordMultiRP.Bot.Data
 
         public Role Role { get; set; }
 
+        public string ResetCommand { get; set; }
+
         public ICollection<Proxy> Proxies { get; set; }
 
         public ICollection<UserChannel> Channels { get; set; }

@@ -177,7 +177,6 @@ namespace DiscordMultiRP.Web.Controllers
                     Prefix = pvm.Prefix,
                     Suffix = pvm.Suffix,
                     IsGlobal = pvm.IsGlobal,
-                    IsReset = pvm.IsReset,
                     User = proxyUser,
                 };
 
@@ -260,7 +259,6 @@ namespace DiscordMultiRP.Web.Controllers
                         }
 
                         proxy.IsGlobal = pvm.IsGlobal;
-                        proxy.IsReset = pvm.IsReset;
                         proxy.Name = pvm.Name;
                         proxy.Prefix = pvm.Prefix;
                         proxy.Suffix = pvm.Suffix;

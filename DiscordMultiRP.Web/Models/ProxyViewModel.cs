@@ -22,7 +22,6 @@ namespace DiscordMultiRP.Web.Models
             HasAvatar = proxy.AvatarGuid != Guid.Empty && !string.IsNullOrWhiteSpace(proxy.AvatarContentType);
             Prefix = proxy.Prefix;
             Suffix = proxy.Suffix;
-            IsReset = proxy.IsReset;
             IsGlobal = proxy.IsGlobal;
             Channels = proxy.Channels?.Select(c => c.Channel.DiscordId).ToList();
             DbChannels = proxy.Channels;

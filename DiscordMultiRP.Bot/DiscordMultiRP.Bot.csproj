@@ -7,6 +7,7 @@
   <ItemGroup>
     <Compile Remove="Migrations\20190103050800_Initial.cs" />
     <Compile Remove="Migrations\20190111030600_AddProxyAvatar.cs" />
+    <Compile Remove="Migrations\20190125092127_MoveResetToUser.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Discord.Net" Version="2.0.0" />
