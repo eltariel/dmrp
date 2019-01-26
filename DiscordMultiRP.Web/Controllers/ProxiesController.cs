@@ -43,10 +43,10 @@ namespace DiscordMultiRP.Web.Controllers
         private ulong DiscordUserId => DiscordHelper.GetDiscordUserIdFor(User);
 
         // GET: Proxies
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(int? id)
         {
             var contextProxies = await (dbUser.IsAdmin
-                    ? db.Proxies.Include(p => p.User)
+                    ? db.Proxies.Include(p => p.User).Where(p => !id.HasValue || p.User.Id == id)
                     : db.Proxies.Where(p => p.User.DiscordId == DiscordUserId))
                 .ToListAsync();
 
@@ -105,10 +105,9 @@ namespace DiscordMultiRP.Web.Controllers
         public async Task<IActionResult> Create()
         {
             var discordUser = discord.GetUser(DiscordUserId);
-            var myChannels = discordUser
-                .MutualGuilds
-                .SelectMany(g => g.TextChannels)
-                .ToList();
+            var allowedChannels = await GetUserAllowedChannels(discordUser, discordUser);
+
+            ViewBag.DiscordUserId = DiscordUserId;
 
             if (dbUser.IsAdmin)
             {
@@ -125,22 +124,51 @@ namespace DiscordMultiRP.Web.Controllers
                         $"{u.Id}",
                         u.Id == discordUser.Id));
 
-                var channelsByUser = otherUsers
-                    .ToDictionary(
-                        u => u.Id,
-                        u => u.MutualGuilds
-                            .SelectMany(g => g.TextChannels)
-                            .Intersect(myChannels)
-                            .Select(c => new SelectListItem($"{c.Guild.Name}: {c.Name}", $"{c.Id}"))
-                            .ToList());
-
                 ViewBag.VisibleUsers = visibleUsers;
-                ViewBag.ChannelsByUser = channelsByUser;
+
+                //var channelsByUser = otherUsers
+                //    .ToDictionary(
+                //        u => u.Id,
+                //        u => u.MutualGuilds
+                //            .SelectMany(g => g.TextChannels)
+                //            .Intersect(myChannels)
+                //            .Select(c => new SelectListItem(
+                //                $"{c.Guild.Name}: {c.Name}",
+                //                $"{c.Id}",
+                //                false,
+                //                false))
+                //            .ToList());
+                //ViewBag.ChannelsByUser = channelsByUser;
             }
 
-            ViewBag.Channels = myChannels.Select(c => new SelectListItem($"{c.Guild.Name}: {c.Name}", $"{c.Id}"));
+            ViewBag.Channels = allowedChannels;
 
             return View();
+        }
+
+        private async Task<List<SelectListItem>> GetUserAllowedChannels(SocketUser self, SocketUser otherUser)
+        {
+            var myChannels = self
+                .MutualGuilds
+                .SelectMany(g => g.TextChannels);
+            var theirChannels = otherUser
+                .MutualGuilds
+                .SelectMany(g => g.TextChannels);
+            var visibleChannels = myChannels.Intersect(theirChannels).ToList();
+            var dbChannels = await db.Channels
+                .Where(c => visibleChannels.Exists(d => d.Id == c.DiscordId))
+                .ToListAsync();
+            var allowedChannels = visibleChannels
+                .Join(dbChannels,
+                    c => c.Id,
+                    c => c.DiscordId,
+                    (discordChannel, dbChannel) => new SelectListItem(
+                        $"{discordChannel.Guild.Name}: {discordChannel.Name}",
+                        $"{discordChannel.Id}",
+                        false,
+                        !(dbChannel.IsMonitored || dbUser.IsAllowedGlobal)))
+                .ToList();
+            return allowedChannels;
         }
 
         // POST: Proxies/Create
@@ -150,7 +178,6 @@ namespace DiscordMultiRP.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Id,UserDiscordId,Name,Prefix,Suffix,IsReset,IsGlobal,Channels,Avatar")] ProxyViewModel pvm)
         {
-            //var (discord, dbUser) = await CommonSetup();
             if (ModelState.IsValid)
             {
                 if (dbUser == null || dbUser.Role == Role.None)
@@ -217,11 +244,9 @@ namespace DiscordMultiRP.Web.Controllers
                 return NotFound("Can't connect to Discord.");
             }
 
-            var userChannels = discord.GetUser(DiscordUserId)
-                .MutualGuilds
-                .SelectMany(g => g.TextChannels)
-                .Select(c => new SelectListItem($"{c.Guild.Name}: {c.Name}", $"{c.Id}"));
-            ViewBag.Channels = userChannels;
+            ViewBag.Channels = await GetUserAllowedChannels(
+                discord.GetUser(DiscordUserId),
+                discord.GetUser(proxy.User.DiscordId));
 
             return View(new ProxyViewModel(proxy));
         }
