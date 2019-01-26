@@ -14,7 +14,7 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace DiscordMultiRP.Web.Controllers
 {
-    [Authorize]
+    [Authorize(Policy = DbRoleRequirement.RequiresAdmin)]
     public class ChannelsController : Controller
     {
         private readonly ProxyDataContext db;

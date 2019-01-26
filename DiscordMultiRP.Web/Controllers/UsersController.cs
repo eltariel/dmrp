@@ -8,10 +8,12 @@ using Microsoft.EntityFrameworkCore;
 using DiscordMultiRP.Bot.Data;
 using DiscordMultiRP.Web.Models;
 using DiscordMultiRP.Web.Util;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Configuration;
 
 namespace DiscordMultiRP.Web.Controllers
 {
+    [Authorize(Policy = DbRoleRequirement.RequiresAdmin)]
     public class UsersController : Controller
     {
         private readonly ProxyDataContext db;

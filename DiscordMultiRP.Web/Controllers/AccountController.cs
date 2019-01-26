@@ -23,5 +23,10 @@ namespace DiscordMultiRP.Web.Controllers
         {
             return SignOut(new AuthenticationProperties {RedirectUri = "/"});
         }
+
+        public IActionResult AccessDenied(string ReturnUrl)
+        {
+            return View((object)ReturnUrl);
+        }
     }
 }
