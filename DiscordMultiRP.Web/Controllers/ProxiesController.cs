@@ -29,7 +29,7 @@ namespace DiscordMultiRP.Web.Controllers
         private readonly AvatarHelper avatarHelper;
         private readonly ILogger<ProxiesController> logger;
         private DiscordSocketClient discord;
-        private User dbUser;
+        private BotUser botUser;
 
         public ProxiesController(ProxyDataContext db, IConfiguration cfg, DiscordHelper discordHelper, AvatarHelper avatarHelper, ILogger<ProxiesController> logger)
         {
@@ -45,19 +45,19 @@ namespace DiscordMultiRP.Web.Controllers
         // GET: Proxies
         public async Task<IActionResult> Index(int? id)
         {
-            var contextProxies = await (dbUser.IsAdmin
-                    ? db.Proxies.Include(p => p.User).Where(p => !id.HasValue || p.User.Id == id)
-                    : db.Proxies.Where(p => p.User.DiscordId == DiscordUserId))
+            var contextProxies = await (botUser.IsAdmin
+                    ? db.Proxies.Include(p => p.BotUser).Where(p => !id.HasValue || p.BotUser.Id == id)
+                    : db.Proxies.Where(p => p.BotUser.DiscordId == DiscordUserId))
                 .ToListAsync();
 
             IEnumerable<ProxyViewModel> pvms;
-            if (dbUser.IsAdmin)
+            if (botUser.IsAdmin)
             {
                 pvms = contextProxies.Select(p =>
                 {
-                    var username = discord?.GetUser(p.User.DiscordId) is IUser du
+                    var username = discord?.GetUser(p.BotUser.DiscordId) is IUser du
                         ? $"{du.Username}#{du.Discriminator}"
-                        : $"Discord UserId: {p.User.DiscordId}";
+                        : $"Discord UserId: {p.BotUser.DiscordId}";
 
                     return new ProxyViewModel(p, username);
                 });
@@ -67,7 +67,7 @@ namespace DiscordMultiRP.Web.Controllers
                 pvms = contextProxies.Select(p => new ProxyViewModel(p));
             }
 
-            return View(pvms.OrderBy(p => p.UserId != dbUser.Id)
+            return View(pvms.OrderBy(p => p.UserId != botUser.Id)
                 .ThenBy(p => p.UserName)
                 .ThenBy(p => p.Name)
                 .ToList());
@@ -82,7 +82,7 @@ namespace DiscordMultiRP.Web.Controllers
             }
 
             var proxy = await db.Proxies
-                .Include(p => p.User)
+                .Include(p => p.BotUser)
                 .Include(p => p.Channels).ThenInclude(pc => pc.Channel)
                 .FirstOrDefaultAsync(m => m.Id == id);
             if (proxy == null)
@@ -109,7 +109,7 @@ namespace DiscordMultiRP.Web.Controllers
 
             ViewBag.DiscordUserId = DiscordUserId;
 
-            if (dbUser.IsAdmin)
+            if (botUser.IsAdmin)
             {
                 var otherUsers = discordUser
                     .MutualGuilds
@@ -166,7 +166,7 @@ namespace DiscordMultiRP.Web.Controllers
                         $"{discordChannel.Guild.Name}: {discordChannel.Name}",
                         $"{discordChannel.Id}",
                         false,
-                        !(dbChannel.IsMonitored || dbUser.IsAllowedGlobal)))
+                        !(dbChannel.IsMonitored || botUser.IsAllowedGlobal)))
                 .ToList();
             return allowedChannels;
         }
@@ -180,23 +180,23 @@ namespace DiscordMultiRP.Web.Controllers
         {
             if (ModelState.IsValid)
             {
-                if (dbUser == null || dbUser.Role == Role.None)
+                if (botUser == null || botUser.Role == Role.None)
                 {
                     return Forbid();
                 }
 
-                if (!dbUser.IsAdmin && pvm.UserDiscordId != dbUser.DiscordId)
+                if (!botUser.IsAdmin && pvm.UserDiscordId != botUser.DiscordId)
                 {
                     return Forbid();
                 }
 
-                if (!dbUser.IsAllowedGlobal)
+                if (!botUser.IsAllowedGlobal)
                 {
                     pvm.IsGlobal = false;
                 }
 
-                var proxyUser = await db.Users.FirstOrDefaultAsync(u => u.DiscordId == pvm.UserDiscordId) ??
-                                new User {DiscordId = pvm.UserDiscordId};
+                var proxyUser = await db.BotUsers.FirstOrDefaultAsync(u => u.DiscordId == pvm.UserDiscordId) ??
+                                new BotUser {DiscordId = pvm.UserDiscordId};
 
                 var proxy = new Proxy
                 {
@@ -204,7 +204,7 @@ namespace DiscordMultiRP.Web.Controllers
                     Prefix = pvm.Prefix,
                     Suffix = pvm.Suffix,
                     IsGlobal = pvm.IsGlobal,
-                    User = proxyUser,
+                    BotUser = proxyUser,
                 };
 
                 if (!await UpdateProxyChannels(proxy, pvm))
@@ -231,7 +231,7 @@ namespace DiscordMultiRP.Web.Controllers
             }
 
             var proxy = await db.Proxies
-                .Include(p => p.User)
+                .Include(p => p.BotUser)
                 .Include(p => p.Channels).ThenInclude(c => c.Channel)
                 .FirstOrDefaultAsync(p => p.Id == id);
             if (proxy == null)
@@ -246,7 +246,7 @@ namespace DiscordMultiRP.Web.Controllers
 
             ViewBag.Channels = await GetUserAllowedChannels(
                 discord.GetUser(DiscordUserId),
-                discord.GetUser(proxy.User.DiscordId));
+                discord.GetUser(proxy.BotUser.DiscordId));
 
             return View(new ProxyViewModel(proxy));
         }
@@ -267,15 +267,15 @@ namespace DiscordMultiRP.Web.Controllers
             {
                 try
                 {
-                    if (dbUser != null)
+                    if (botUser != null)
                     {
-                        if (!dbUser.IsAllowedGlobal)
+                        if (!botUser.IsAllowedGlobal)
                         {
                             pvm.IsGlobal = false;
                         }
 
                         var proxy = await db.Proxies
-                            .Include(p => p.User)
+                            .Include(p => p.BotUser)
                             .Include(p => p.Channels).ThenInclude(c => c.Channel)
                             .FirstOrDefaultAsync(p => p.Id == id);
                         if (proxy == null)
@@ -327,14 +327,14 @@ namespace DiscordMultiRP.Web.Controllers
 
             logger.LogDebug($"Delete request for user ID {id}");
             var proxy = await db.Proxies
-                .Include(p => p.User)
+                .Include(p => p.BotUser)
                 .FirstOrDefaultAsync(m => m.Id == id);
             if (proxy == null)
             {
                 return NotFound();
             }
 
-            if (dbUser.Id != proxy.User.Id && !dbUser.IsAdmin)
+            if (botUser.Id != proxy.BotUser.Id && !botUser.IsAdmin)
             {
                 return Forbid();
             }
@@ -353,14 +353,14 @@ namespace DiscordMultiRP.Web.Controllers
             }
 
             var proxy = await db.Proxies
-                .Include(p => p.User)
+                .Include(p => p.BotUser)
                 .FirstOrDefaultAsync(m => m.Id == id);
             if (proxy == null)
             {
                 return NotFound();
             }
 
-            if (dbUser.Id != proxy.User.Id && !dbUser.IsAdmin)
+            if (botUser.Id != proxy.BotUser.Id && !botUser.IsAdmin)
             {
                 return Forbid();
             }
@@ -391,7 +391,7 @@ namespace DiscordMultiRP.Web.Controllers
         {
             try
             {
-                (discord, dbUser) = await CommonSetup();
+                (discord, botUser) = await CommonSetup();
                 var resultContext = await next();
             }
             catch (UnauthorizedAccessException uaex)
@@ -400,7 +400,7 @@ namespace DiscordMultiRP.Web.Controllers
             }
         }
 
-        private async Task<(DiscordSocketClient discord, User user)> CommonSetup()
+        private async Task<(DiscordSocketClient discord, BotUser botUser)> CommonSetup()
         {
             var discord = await discordHelper.LoginBot();
             if (discord == null)
@@ -408,13 +408,13 @@ namespace DiscordMultiRP.Web.Controllers
                 ViewBag.DiscordUnavailable = true;
             }
 
-            var user = await GetDbUser();
-            if (user == null)
+            var botUser = await GetBotUser();
+            if (botUser == null)
             {
                 if (discord?.GetUser(DiscordUserId)?.MutualGuilds.Any() ?? false)
                 {
-                    user = new User {DiscordId = DiscordUserId, Role = Role.User};
-                    db.Users.Add(user);
+                    botUser = new BotUser {DiscordId = DiscordUserId, Role = Role.User};
+                    db.BotUsers.Add(botUser);
                     await db.SaveChangesAsync();
                 }
                 else
@@ -423,9 +423,9 @@ namespace DiscordMultiRP.Web.Controllers
                 }
             }
 
-            ViewBag.User = user;
+            ViewBag.User = botUser;
 
-            return (discord, user);
+            return (discord, botUser);
         }
 
         private bool ProxyExists(int id)
@@ -448,12 +448,12 @@ namespace DiscordMultiRP.Web.Controllers
                         .Select(id => new ProxyChannel
                         {
                             Channel = dbChannels.FirstOrDefault(dc => dc.DiscordId == id) ??
-                                      new Channel { DiscordId = id, IsMonitored = proxy.User.IsAdmin },
+                                      new Channel { DiscordId = id, IsMonitored = proxy.BotUser.IsAdmin },
                             Proxy = proxy
                         })
                         .ToList();
 
-                    if (!proxy.User.IsAdmin && proxy.Channels.Select(c => c.Channel).Any(c => !c.IsMonitored))
+                    if (!proxy.BotUser.IsAdmin && proxy.Channels.Select(c => c.Channel).Any(c => !c.IsMonitored))
                     {
                         return false;
                     }
@@ -467,9 +467,9 @@ namespace DiscordMultiRP.Web.Controllers
             return true;
         }
 
-        private async Task<User> GetDbUser()
+        private async Task<BotUser> GetBotUser()
         {
-            var user = await db.Users.FirstOrDefaultAsync(u => u.DiscordId == DiscordUserId);
+            var user = await db.BotUsers.FirstOrDefaultAsync(u => u.DiscordId == DiscordUserId);
             ViewBag.User = user;
             return user;
         }

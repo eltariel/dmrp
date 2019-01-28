@@ -12,23 +12,23 @@ namespace DiscordMultiRP.Bot.ProxyResponder
         {
         }
 
-        public MatchDescription(string text, User user) : this(true, text: text, user: user)
+        public MatchDescription(string text, BotUser botUser) : this(true, text: text, botUser: botUser)
         {
         }
 
-        private MatchDescription(bool isSuccess, string text = null, Proxy proxy = null, User user = null)
+        private MatchDescription(bool isSuccess, string text = null, Proxy proxy = null, BotUser botUser = null)
         {
             IsSuccess = isSuccess;
             Proxy = proxy;
-            User = user;
+            BotUser = botUser;
             Text = text;
         }
 
         public bool IsSuccess { get; }
         public Proxy Proxy { get; }
-        public User User { get; }
+        public BotUser BotUser { get; }
         public string Text { get; }
 
-        public bool IsReset => User != null;
+        public bool IsReset => BotUser != null;
     }
 }

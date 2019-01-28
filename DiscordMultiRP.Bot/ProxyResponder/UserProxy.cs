@@ -36,7 +36,7 @@ namespace DiscordMultiRP.Bot.ProxyResponder
 
         public async Task HandleMessage(SocketMessage msg)
         {
-            var user = await proxyBuilder.GetUserById(msg.Author.Id);
+            var user = await proxyBuilder.GetBotUserById(msg.Author.Id);
             if (user != null && msg.Channel is ITextChannel c)
             {
                 log.Debug($"Found {user.Proxies.Count} registered proxies for user {msg.Author}");
@@ -116,9 +116,9 @@ namespace DiscordMultiRP.Bot.ProxyResponder
             }
         }
 
-        private MatchDescription MatchProxyContent(SocketMessage msg, User user)
+        private MatchDescription MatchProxyContent(SocketMessage msg, BotUser botUser)
         {
-            foreach (var p in user.Proxies.Where(p => p.IsForChannel(msg)))
+            foreach (var p in botUser.Proxies.Where(p => p.IsForChannel(msg)))
             {
                 var proxyMatch = regexCache.GetRegexFor(p).Match(msg.Content);
                 if (proxyMatch.Success)
@@ -127,10 +127,10 @@ namespace DiscordMultiRP.Bot.ProxyResponder
                 }
             }
 
-            var resetMatch = regexCache.GetRegexForReset(user)?.Match(msg.Content);
+            var resetMatch = regexCache.GetRegexForReset(botUser)?.Match(msg.Content);
             if (resetMatch?.Success ?? false)
             {
-                return new MatchDescription(resetMatch.Groups["text"].Value, user);
+                return new MatchDescription(resetMatch.Groups["text"].Value, botUser);
             }
 
             return new MatchDescription();

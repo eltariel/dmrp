@@ -12,7 +12,7 @@ namespace DiscordMultiRP.Bot.Data
         Global = 1 << 2,
     }
 
-    public class User
+    public class BotUser
     {
         public int Id { get; set; }
 

@@ -21,7 +21,7 @@ namespace DiscordMultiRP.Bot.Data
 
         public ICollection<ProxyChannel> Channels { get; set; }
         
-        public User User { get; set; }
+        public BotUser BotUser { get; set; }
 
         public bool IsForChannel(SocketMessage msg) =>
             IsGlobal ||

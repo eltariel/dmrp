@@ -37,7 +37,7 @@ namespace DiscordMultiRP.Web.Controllers
             }
 
             var dUsers = discord.Guilds.SelectMany(g => g.Users).Distinct().ToList();
-            var dbUsers = await db.Users.ToListAsync();
+            var dbUsers = await db.BotUsers.ToListAsync();
             var modelUsers = dbUsers.Select(u => new UserViewModel(u, dUsers.FirstOrDefault(d => d.Id == u.DiscordId)));
 
             return View(modelUsers);
@@ -51,7 +51,7 @@ namespace DiscordMultiRP.Web.Controllers
                 return NotFound();
             }
 
-            var user = await db.Users
+            var user = await db.BotUsers
                 .FirstOrDefaultAsync(m => m.Id == id);
             if (user == null)
             {
@@ -71,7 +71,7 @@ namespace DiscordMultiRP.Web.Controllers
             }
 
             var dUsers = discord.Guilds.SelectMany(g => g.Users).Distinct().ToList();
-            var dbUsers = await db.Users.ToListAsync();
+            var dbUsers = await db.BotUsers.ToListAsync();
             var modelUsers = dUsers
                 .Where(d => dbUsers.All(u => u.DiscordId != d.Id))
                 .Select(d => new SelectListItem($"{d.Username}#{d.Discriminator}", $"{d.Id}"))
@@ -87,15 +87,15 @@ namespace DiscordMultiRP.Web.Controllers
         // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,DiscordId,Role,ResetCommand")] User user)
+        public async Task<IActionResult> Create([Bind("Id,DiscordId,Role,ResetCommand")] BotUser botUser)
         {
             if (ModelState.IsValid)
             {
-                db.Add(user);
+                db.Add(botUser);
                 await db.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            return View(user);
+            return View(botUser);
         }
 
         // GET: Users/Edit/5
@@ -106,7 +106,7 @@ namespace DiscordMultiRP.Web.Controllers
                 return NotFound();
             }
 
-            var user = await db.Users.FindAsync(id);
+            var user = await db.BotUsers.FindAsync(id);
             if (user == null)
             {
                 return NotFound();
@@ -119,9 +119,9 @@ namespace DiscordMultiRP.Web.Controllers
         // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,DiscordId,Role,ResetCommand")] User user)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,DiscordId,Role,ResetCommand")] BotUser botUser)
         {
-            if (id != user.Id)
+            if (id != botUser.Id)
             {
                 return NotFound();
             }
@@ -130,12 +130,12 @@ namespace DiscordMultiRP.Web.Controllers
             {
                 try
                 {
-                    db.Update(user);
+                    db.Update(botUser);
                     await db.SaveChangesAsync();
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!UserExists(user.Id))
+                    if (!UserExists(botUser.Id))
                     {
                         return NotFound();
                     }
@@ -146,7 +146,7 @@ namespace DiscordMultiRP.Web.Controllers
                 }
                 return RedirectToAction(nameof(Index));
             }
-            return View(user);
+            return View(botUser);
         }
 
         // GET: Users/Delete/5
@@ -157,7 +157,7 @@ namespace DiscordMultiRP.Web.Controllers
                 return NotFound();
             }
 
-            var user = await db.Users
+            var user = await db.BotUsers
                 .FirstOrDefaultAsync(m => m.Id == id);
             if (user == null)
             {
@@ -172,15 +172,15 @@ namespace DiscordMultiRP.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var user = await db.Users.FindAsync(id);
-            db.Users.Remove(user);
+            var user = await db.BotUsers.FindAsync(id);
+            db.BotUsers.Remove(user);
             await db.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
         private bool UserExists(int id)
         {
-            return db.Users.Any(e => e.Id == id);
+            return db.BotUsers.Any(e => e.Id == id);
         }
 
     }

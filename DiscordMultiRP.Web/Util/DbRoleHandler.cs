@@ -18,7 +18,7 @@ namespace DiscordMultiRP.Web.Util
             {
                 var actionContext = (ActionContext)context.Resource;
                 var db = actionContext.HttpContext.RequestServices.GetRequiredService<ProxyDataContext>();
-                var dbUser = await db.Users.FirstOrDefaultAsync(u => u.DiscordId == discordId);
+                var dbUser = await db.BotUsers.FirstOrDefaultAsync(u => u.DiscordId == discordId);
                 if (dbUser?.IsAdmin ?? false)
                 {
                     context.Succeed(requirement);

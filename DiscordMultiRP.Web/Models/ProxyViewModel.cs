@@ -25,9 +25,9 @@ namespace DiscordMultiRP.Web.Models
             IsGlobal = proxy.IsGlobal;
             Channels = proxy.Channels?.Select(c => c.Channel.DiscordId).ToList();
             DbChannels = proxy.Channels;
-            UserId = proxy.User.Id;
+            UserId = proxy.BotUser.Id;
             UserName = userName;
-            UserDiscordId = proxy.User.DiscordId;
+            UserDiscordId = proxy.BotUser.DiscordId;
             DiscordChannels = discordChannels?.ToList();
         }
 

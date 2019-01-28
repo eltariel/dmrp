@@ -5,18 +5,18 @@ namespace DiscordMultiRP.Web.Models
 {
     public class UserViewModel
     {
-        private readonly User db;
-        private readonly IUser discord;
+        private readonly BotUser botUser;
+        private readonly IUser discordUser;
 
-        public UserViewModel(User db, IUser discord)
+        public UserViewModel(BotUser botUser, IUser discordUser)
         {
-            this.db = db;
-            this.discord = discord;
+            this.botUser = botUser;
+            this.discordUser = discordUser;
         }
 
-        public int Id => db.Id;
-        public ulong DiscordId => discord?.Id ?? db?.DiscordId ?? 0;
-        public string Name => discord?.Username ?? $"[Unknown user]";
-        public Role Role => db.Role;
+        public int Id => botUser.Id;
+        public ulong DiscordId => discordUser?.Id ?? botUser?.DiscordId ?? 0;
+        public string Name => discordUser?.Username ?? $"[Unknown user]";
+        public Role Role => botUser.Role;
     }
 }

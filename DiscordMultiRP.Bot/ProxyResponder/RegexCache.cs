@@ -23,7 +23,7 @@ namespace DiscordMultiRP.Bot.ProxyResponder
             return r;
         }
 
-        public Regex GetRegexForReset(User u)
+        public Regex GetRegexForReset(BotUser u)
         {
             if (string.IsNullOrWhiteSpace(u?.ResetCommand))
             {

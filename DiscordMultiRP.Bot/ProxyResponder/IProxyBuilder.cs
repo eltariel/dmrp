@@ -5,12 +5,12 @@ namespace DiscordMultiRP.Bot.ProxyResponder
 {
     public interface IProxyBuilder
     {
-        Task<User> GetUserById(ulong userId);
+        Task<BotUser> GetBotUserById(ulong userId);
 
-        Task<Proxy> GetLastProxyForUserAndChannel(User user, ulong channelId);
+        Task<Proxy> GetLastProxyForUserAndChannel(BotUser botUser, ulong channelId);
 
-        Task SetLastProxyForUserAndChannel(Proxy proxy, User user, ulong channelId);
+        Task SetLastProxyForUserAndChannel(Proxy proxy, BotUser botUser, ulong channelId);
 
-        Task ClearLastProxyForUserAndChannel(User user, ulong channelId);
+        Task ClearLastProxyForUserAndChannel(BotUser botUser, ulong channelId);
     }
 }

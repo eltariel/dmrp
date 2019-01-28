@@ -32,35 +32,35 @@ namespace DiscordMultiRP.Bot.ProxyResponder
             }
         }
 
-        public async Task<User> GetUserById(ulong userId)
+        public async Task<BotUser> GetBotUserById(ulong userId)
         {
             using (var db = GetDataContext())
             {
-                var dbUser = await db.Users
+                var dbUser = await db.BotUsers
                     .Include(u => u.Proxies).ThenInclude(p => p.Channels).ThenInclude(c => c.Channel)
                     .FirstOrDefaultAsync(u => u.DiscordId == userId);
                 return dbUser;
             }
         }
 
-        public async Task<Proxy> GetLastProxyForUserAndChannel(User user, ulong channelId)
+        public async Task<Proxy> GetLastProxyForUserAndChannel(BotUser botUser, ulong channelId)
         {
             using (var db = GetDataContext())
             {
                 var uc = await db.UserChannels
-                    .Include(x => x.User)
+                    .Include(x => x.BotUser)
                     .Include(x => x.Channel)
                     .Include(x => x.LastProxy.Channels).ThenInclude(c => c.Channel)
-                    .FirstOrDefaultAsync(x => x.User.Id == user.Id && x.Channel.DiscordId == channelId);
+                    .FirstOrDefaultAsync(x => x.BotUser.Id == botUser.Id && x.Channel.DiscordId == channelId);
                 return uc?.LastProxy;
             }
         }
 
-        public async Task SetLastProxyForUserAndChannel(Proxy proxy, User user, ulong channelId)
+        public async Task SetLastProxyForUserAndChannel(Proxy proxy, BotUser botUser, ulong channelId)
         {
             using (var db = GetDataContext())
             {
-                var dbUser = await GetUser(db, user);
+                var dbUser = await GetUser(db, botUser);
                 if (dbUser != null)
                 {
                     var uc = dbUser.Channels.FirstOrDefault(c => c.Channel.DiscordId == channelId);
@@ -70,7 +70,7 @@ namespace DiscordMultiRP.Bot.ProxyResponder
                         {
                             Channel = await db.Channels.FirstOrDefaultAsync(c => c.DiscordId == channelId) ??
                                       new Channel {DiscordId = channelId},
-                            User = dbUser,
+                            BotUser = dbUser,
                         };
                         dbUser.Channels.Add(uc);
                     }
@@ -82,11 +82,11 @@ namespace DiscordMultiRP.Bot.ProxyResponder
             }
         }
 
-        public async Task ClearLastProxyForUserAndChannel(User user, ulong channelId)
+        public async Task ClearLastProxyForUserAndChannel(BotUser botUser, ulong channelId)
         {
             using (var db = GetDataContext())
             {
-                var dbUser = await GetUser(db, user);
+                var dbUser = await GetUser(db, botUser);
                 var uc = dbUser?.Channels.FirstOrDefault(c => c.Channel.DiscordId == channelId);
                 if (uc != null)
                 {
@@ -97,12 +97,12 @@ namespace DiscordMultiRP.Bot.ProxyResponder
             }
         }
 
-        private static async Task<User> GetUser(ProxyDataContext db, User user)
+        private static async Task<BotUser> GetUser(ProxyDataContext db, BotUser botUser)
         {
-            var dbUser = await db.Users
+            var dbUser = await db.BotUsers
                 .Include(u => u.Channels).ThenInclude(c => c.Channel)
                 .Include(u => u.Proxies)
-                .FirstOrDefaultAsync(u => u.Id == user.Id);
+                .FirstOrDefaultAsync(u => u.Id == botUser.Id);
             return dbUser;
         }
 

@@ -4,7 +4,7 @@
     {
         public int Id { get; set; }
 
-        public User User { get; set; }
+        public BotUser BotUser { get; set; }
 
         public Channel Channel { get; set; }
 

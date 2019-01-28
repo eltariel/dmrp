@@ -14,7 +14,7 @@ namespace DiscordMultiRP.Bot.Data
         {
         }
 
-        public DbSet<User> Users { get; set; }
+        public DbSet<BotUser> BotUsers { get; set; }
         public DbSet<Proxy> Proxies { get; set; }
         public DbSet<Channel> Channels { get; set; }
         public DbSet<UserChannel> UserChannels { get; set; }
