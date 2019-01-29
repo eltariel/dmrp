@@ -36,18 +36,18 @@ namespace DiscordMultiRP.Bot.ProxyResponder
 
         public async Task HandleMessage(SocketMessage msg)
         {
-            var user = await proxyBuilder.GetBotUserById(msg.Author.Id);
-            if (user != null && msg.Channel is ITextChannel c)
+            var botUser = await proxyBuilder.GetBotUserById(msg.Author.Id);
+            if (botUser != null && msg.Channel is ITextChannel c)
             {
-                log.Debug($"Found {user.Proxies.Count} registered proxies for user {msg.Author}");
-                var m = MatchProxyContent(msg, user);
+                log.Debug($"Found {botUser.Proxies.Count} registered proxies for user {msg.Author}");
+                var m = MatchProxyContent(msg, botUser);
 
                 try
                 {
                     if (m.IsReset)
                     {
                         log.Debug($"Reset message for {msg.Author} in {c.Guild.Name}:{c.Name}");
-                        await proxyBuilder.ClearLastProxyForUserAndChannel(user, c.Id);
+                        await proxyBuilder.ClearLastProxyForUserAndChannel(botUser, c.Id);
                         await msg.DeleteAsync();
                     }
                     else
@@ -56,15 +56,19 @@ namespace DiscordMultiRP.Bot.ProxyResponder
                         if (!m.IsSuccess)
                         {
                             log.Debug($"Using last proxy for {msg.Author} in {c.Guild.Name}:{c.Name}");
-                            p = await proxyBuilder.GetLastProxyForUserAndChannel(user, c.Id);
+                            p = await proxyBuilder.GetLastProxyForUserAndChannel(botUser, c.Id);
                             text = msg.Content;
+                        }
+                        else if (string.IsNullOrWhiteSpace(text))
+                        {
+                            ClaimLastMessage(p, botUser);
                         }
 
                         if (p != null)
                         {
                             log.Debug($"{(p.IsGlobal ? "Global" : "Channel")} proxy message for {p.Name} [{msg.Author}] in channel {c.Guild.Name}:{c.Name} ({c.Id})");
 
-                            await proxyBuilder.SetLastProxyForUserAndChannel(p, user, c.Id);
+                            await proxyBuilder.SetLastProxyForUserAndChannel(p, botUser, c.Id);
                             await SendMessage(msg, text, p);
                             await msg.DeleteAsync();
                         }
@@ -75,6 +79,11 @@ namespace DiscordMultiRP.Bot.ProxyResponder
                     log.Warn(ex, $"Can't handle message for {msg.Author}.");
                 }
             }
+        }
+
+        private void ClaimLastMessage(Proxy proxy, BotUser botUser)
+        {
+            log.Debug($"TODO: User {botUser} claiming last non-specific message for proxy {proxy.Name}");
         }
 
         private async Task SendMessage(SocketMessage msg, string text, Proxy proxy)
@@ -118,19 +127,22 @@ namespace DiscordMultiRP.Bot.ProxyResponder
 
         private MatchDescription MatchProxyContent(SocketMessage msg, BotUser botUser)
         {
-            foreach (var p in botUser.Proxies.Where(p => p.IsForChannel(msg)))
+            var resetMatch = regexCache.GetRegexForReset(botUser)?.Match(msg.Content);
+            if (resetMatch?.Success ?? false)
+            {
+                return new MatchDescription(resetMatch.Groups["text"].Value, botUser);
+            }
+
+            var validProxies = botUser.Proxies
+                .Where(p => p.IsForChannel(msg))
+                .OrderBy(p => p.IsGlobal);
+            foreach (var p in validProxies)
             {
                 var proxyMatch = regexCache.GetRegexFor(p).Match(msg.Content);
                 if (proxyMatch.Success)
                 {
                     return new MatchDescription(proxyMatch.Groups["text"].Value, p);
                 }
-            }
-
-            var resetMatch = regexCache.GetRegexForReset(botUser)?.Match(msg.Content);
-            if (resetMatch?.Success ?? false)
-            {
-                return new MatchDescription(resetMatch.Groups["text"].Value, botUser);
             }
 
             return new MatchDescription();
