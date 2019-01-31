@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Data.Common;
 using System.Linq;
 using System.Net.Http;
@@ -59,18 +60,23 @@ namespace DiscordMultiRP.Bot.ProxyResponder
                             p = await proxyBuilder.GetLastProxyForUserAndChannel(botUser, c.Id);
                             text = msg.Content;
                         }
-                        else if (string.IsNullOrWhiteSpace(text))
-                        {
-                            ClaimLastMessage(p, botUser);
-                        }
 
                         if (p != null)
                         {
-                            log.Debug($"{(p.IsGlobal ? "Global" : "Channel")} proxy message for {p.Name} [{msg.Author}] in channel {c.Guild.Name}:{c.Name} ({c.Id})");
+                            if (string.IsNullOrWhiteSpace(text))
+                            {
+                                await ClaimLastMessage(msg, p, botUser);
+                            }
+                            else
+                            {
+                                log.Debug(
+                                    $"{(p.IsGlobal ? "Global" : "Channel")} proxy message for {p.Name} [{msg.Author}] "
+                                    + $"in channel {c.Guild.Name}:{c.Name} ({c.Id})");
 
-                            await proxyBuilder.SetLastProxyForUserAndChannel(p, botUser, c.Id);
-                            await SendMessage(msg, text, p);
-                            await msg.DeleteAsync();
+                                await proxyBuilder.SetLastProxyForUserAndChannel(p, botUser, c.Id);
+                                await SendMessage(msg, text, p);
+                                await msg.DeleteAsync();
+                            }
                         }
                     }
                 }
@@ -81,12 +87,26 @@ namespace DiscordMultiRP.Bot.ProxyResponder
             }
         }
 
-        private void ClaimLastMessage(Proxy proxy, BotUser botUser)
+        private async Task ClaimLastMessage(SocketMessage msg, Proxy proxy, BotUser botUser)
         {
-            log.Debug($"TODO: User {botUser} claiming last non-specific message for proxy {proxy.Name}");
+            log.Debug($"User {botUser} claiming last non-specific message for proxy {proxy.Name}");
+            var c = msg.Channel;
+            var chm = (await msg.Channel.GetMessagesAsync().ToList()).SelectMany(x => x).ToList();
+            var last = chm.FirstOrDefault(m => m.Id != msg.Id &&
+                                               m.Author.Id == msg.Author.Id ||
+                                               IsOwnProxy(m.Author, msg.Author));
+
+            if (last is IMessage lm)
+            {
+                var username = msg.Author.Username;
+                await msg.DeleteAsync();
+                await proxyBuilder.SetLastProxyForUserAndChannel(proxy, botUser, c.Id);
+                await SendMessage(lm, last.Content, proxy, username);
+                await last.DeleteAsync();
+            }
         }
 
-        private async Task SendMessage(SocketMessage msg, string text, Proxy proxy)
+        private async Task SendMessage(IMessage msg, string text, Proxy proxy, string overrideUsername = null)
         {
             if (!(msg.Channel is ITextChannel c))
             {
@@ -102,6 +122,8 @@ namespace DiscordMultiRP.Bot.ProxyResponder
 
             var hc = await webhookCache.GetWebhook(c);
 
+            var username = $"{proxy.Name} [{overrideUsername ?? msg.Author.Username}]";
+
             if (msg.Attachments.Any())
             {
                 var first = true;
@@ -110,8 +132,8 @@ namespace DiscordMultiRP.Bot.ProxyResponder
                     // TODO: Single multipart request
                     var stream = await new HttpClient().GetStreamAsync(a.Url);
                     await hc.SendFileAsync(stream, a.Filename, first ? text : string.Empty,
-                        embeds: msg.Embeds,
-                        username: proxy.Name,
+                        embeds: msg.Embeds.Select(e => (Embed)e),
+                        username: username,
                         avatarUrl: avatarUrl);
                     first = false;
                 }
@@ -119,11 +141,13 @@ namespace DiscordMultiRP.Bot.ProxyResponder
             else
             {
                 await hc.SendMessageAsync(text,
-                    username: $"{proxy.Name} [{msg.Author.Username}]",
-                    embeds: msg.Embeds,
+                    username: username,
+                    embeds: msg.Embeds.Select(e => (Embed)e),
                     avatarUrl: avatarUrl);
             }
         }
+
+        private static bool IsOwnProxy(IUser author, IUser user) => author.IsWebhook && author.Username.Contains($"[{user.Username}]");
 
         private MatchDescription MatchProxyContent(SocketMessage msg, BotUser botUser)
         {
