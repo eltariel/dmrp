@@ -9,6 +9,8 @@
     <Compile Remove="Migrations\20190111030600_AddProxyAvatar.cs" />
     <Compile Remove="Migrations\20190125092127_MoveResetToUser.cs" />
     <Compile Remove="Migrations\20190128203613_RenameUserToBotUser.cs" />
+    <Compile Remove="Migrations\20190131061934_AddLastGlobalProxy.cs" />
+    <Compile Remove="Migrations\20190131062255_AddLastGlobalProxy.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Discord.Net" Version="2.0.0" />

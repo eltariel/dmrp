@@ -47,12 +47,13 @@ namespace DiscordMultiRP.Bot.ProxyResponder
         {
             using (var db = GetDataContext())
             {
+                var dbUser = await GetUser(db, botUser);
                 var uc = await db.UserChannels
                     .Include(x => x.BotUser)
                     .Include(x => x.Channel)
                     .Include(x => x.LastProxy.Channels).ThenInclude(c => c.Channel)
-                    .FirstOrDefaultAsync(x => x.BotUser.Id == botUser.Id && x.Channel.DiscordId == channelId);
-                return uc?.LastProxy;
+                    .FirstOrDefaultAsync(x => dbUser != null && x.BotUser.Id == dbUser.Id && x.Channel.DiscordId == channelId);
+                return uc?.LastProxy ?? dbUser?.LastGlobalProxy;
             }
         }
 
@@ -63,19 +64,28 @@ namespace DiscordMultiRP.Bot.ProxyResponder
                 var dbUser = await GetUser(db, botUser);
                 if (dbUser != null)
                 {
+                    var dbProxy = dbUser.Proxies.FirstOrDefault(p => p.Id == proxy.Id);
                     var uc = dbUser.Channels.FirstOrDefault(c => c.Channel.DiscordId == channelId);
-                    if (uc == null)
-                    {
-                        uc = new UserChannel
-                        {
-                            Channel = await db.Channels.FirstOrDefaultAsync(c => c.DiscordId == channelId) ??
-                                      new Channel {DiscordId = channelId},
-                            BotUser = dbUser,
-                        };
-                        dbUser.Channels.Add(uc);
-                    }
 
-                    uc.LastProxy = dbUser.Proxies.FirstOrDefault(p => p.Id == proxy.Id);
+                    if (proxy.IsGlobal && dbUser.IsAllowedGlobal)
+                    {
+                        dbUser.LastGlobalProxy = dbProxy;
+                    }
+                    else
+                    {
+                        if (uc == null)
+                        {
+                            uc = new UserChannel
+                            {
+                                Channel = await db.Channels.FirstOrDefaultAsync(c => c.DiscordId == channelId) ??
+                                          new Channel {DiscordId = channelId},
+                                BotUser = dbUser,
+                            };
+                            dbUser.Channels.Add(uc);
+                        }
+
+                        uc.LastProxy = dbProxy;
+                    }
                 }
 
                 await db.SaveChangesAsync();
@@ -87,10 +97,22 @@ namespace DiscordMultiRP.Bot.ProxyResponder
             using (var db = GetDataContext())
             {
                 var dbUser = await GetUser(db, botUser);
-                var uc = dbUser?.Channels.FirstOrDefault(c => c.Channel.DiscordId == channelId);
-                if (uc != null)
+                if (dbUser != null)
                 {
-                    uc.LastProxy = null;
+                    var uc = dbUser.Channels.FirstOrDefault(c => c.Channel.DiscordId == channelId);
+                    if (uc?.LastProxy != null)
+                    {
+                        if (dbUser.LastGlobalProxy == uc.LastProxy)
+                        {
+                            dbUser.LastGlobalProxy = null;
+                        }
+
+                        uc.LastProxy = null;
+                    }
+                    else
+                    {
+                        dbUser.LastGlobalProxy = null;
+                    }
                 }
 
                 await db.SaveChangesAsync();

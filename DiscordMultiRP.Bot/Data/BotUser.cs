@@ -22,6 +22,8 @@ namespace DiscordMultiRP.Bot.Data
 
         public string ResetCommand { get; set; }
 
+        public Proxy LastGlobalProxy { get; set; }
+
         public ICollection<Proxy> Proxies { get; set; }
 
         public ICollection<UserChannel> Channels { get; set; }

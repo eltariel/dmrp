@@ -23,6 +23,8 @@ namespace DiscordMultiRP.Bot.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Proxy>().HasMany(p => p.Channels).WithOne(pc => pc.Proxy).IsRequired();
+
+            modelBuilder.Entity<BotUser>().HasMany(u => u.Proxies).WithOne(p => p.BotUser);
         }
     }
 }
