@@ -14,6 +14,8 @@ namespace DiscordMultiRP.Web.Util
         private static readonly Logger log = LogManager.GetCurrentClassLogger();
 
         private readonly IConfiguration cfg;
+        private DiscordSocketClient instance;
+
         public DiscordHelper(IConfiguration cfg)
         {
             this.cfg = cfg;
@@ -21,6 +23,11 @@ namespace DiscordMultiRP.Web.Util
 
         public async Task<DiscordSocketClient> LoginBot()
         {
+            if (instance is DiscordSocketClient c)
+            {
+                return c;
+            }
+
             try
             {
                 var discord = new DiscordSocketClient();
@@ -30,6 +37,8 @@ namespace DiscordMultiRP.Web.Util
                 await discord.LoginAsync(TokenType.Bot, cfg["Discord:bot-token"]);
                 await discord.StartAsync();
                 await ready.Task;
+                instance = discord;
+
                 return discord;
 
                 Task OnDiscordReady()

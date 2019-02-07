@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace DiscordMultiRP.Web.Controllers
 {
+    [RequireDiscord]
     [Authorize(Policy = DbRoleRequirement.RequiresAdmin)]
     public class ChannelsController : Controller
     {
@@ -30,10 +31,6 @@ namespace DiscordMultiRP.Web.Controllers
         public async Task<IActionResult> Index()
         {
             var discord = await discordHelper.LoginBot();
-            if (discord == null)
-            {
-                return NotFound("Can't connect to Discord.");
-            }
 
             var discordChannels = discord.Guilds
                 .SelectMany(g => g.TextChannels)
@@ -68,10 +65,6 @@ namespace DiscordMultiRP.Web.Controllers
         public async Task<IActionResult> Create(ulong id)
         {
             var discord = await discordHelper.LoginBot();
-            if (discord == null)
-            {
-                return NotFound("Can't connect to Discord.");
-            }
 
             var dbChannels = await db.Channels.ToListAsync();
             var availableChannels = discord.Guilds

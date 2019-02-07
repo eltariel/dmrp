@@ -7,10 +7,10 @@ namespace DiscordMultiRP.Bot.ProxyResponder
     {
         Task<BotUser> GetBotUserById(ulong userId);
 
-        Task<Proxy> GetLastProxyForUserAndChannel(BotUser botUser, ulong channelId);
+        Task<Proxy> GetCurrentProxy(BotUser botUser, ulong channelId);
 
-        Task SetLastProxyForUserAndChannel(Proxy proxy, BotUser botUser, ulong channelId);
+        Task SetCurrentProxy(Proxy proxy, BotUser botUser, ulong channelId);
 
-        Task ClearLastProxyForUserAndChannel(BotUser botUser, ulong channelId);
+        Task ClearCurrentProxy(BotUser botUser, ulong channelId);
     }
 }

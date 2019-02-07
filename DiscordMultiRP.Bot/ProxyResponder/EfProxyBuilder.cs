@@ -43,7 +43,7 @@ namespace DiscordMultiRP.Bot.ProxyResponder
             }
         }
 
-        public async Task<Proxy> GetLastProxyForUserAndChannel(BotUser botUser, ulong channelId)
+        public async Task<Proxy> GetCurrentProxy(BotUser botUser, ulong channelId)
         {
             using (var db = GetDataContext())
             {
@@ -57,7 +57,7 @@ namespace DiscordMultiRP.Bot.ProxyResponder
             }
         }
 
-        public async Task SetLastProxyForUserAndChannel(Proxy proxy, BotUser botUser, ulong channelId)
+        public async Task SetCurrentProxy(Proxy proxy, BotUser botUser, ulong channelId)
         {
             using (var db = GetDataContext())
             {
@@ -92,7 +92,7 @@ namespace DiscordMultiRP.Bot.ProxyResponder
             }
         }
 
-        public async Task ClearLastProxyForUserAndChannel(BotUser botUser, ulong channelId)
+        public async Task ClearCurrentProxy(BotUser botUser, ulong channelId)
         {
             using (var db = GetDataContext())
             {

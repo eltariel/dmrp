@@ -14,6 +14,7 @@ using Microsoft.Extensions.Configuration;
 namespace DiscordMultiRP.Web.Controllers
 {
     [Authorize(Policy = DbRoleRequirement.RequiresAdmin)]
+    [RequireDiscord]
     public class UsersController : Controller
     {
         private readonly ProxyDataContext db;

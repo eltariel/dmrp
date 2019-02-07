@@ -14,7 +14,9 @@ namespace DiscordMultiRP.Web.Controllers
     {
         public IActionResult Index()
         {
-            return View();
+            return User.Identity.IsAuthenticated
+                ? (IActionResult)RedirectToAction("Index", "Proxies")
+                : View();
         }
 
         public IActionResult Privacy()

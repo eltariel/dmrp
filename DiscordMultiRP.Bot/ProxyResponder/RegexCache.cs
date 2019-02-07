@@ -7,10 +7,9 @@ namespace DiscordMultiRP.Bot.ProxyResponder
 {
     public class RegexCache
     {
-        private static readonly Logger log = LogManager.GetCurrentClassLogger();
+        private static readonly Regex resetRegex = new Regex($@"^\s*!:\s*$", RegexOptions.IgnoreCase);
 
         private readonly Dictionary<(string, string), Regex> proxyCache = new Dictionary<(string, string), Regex>();
-        private readonly Dictionary<string, Regex> resetCache = new Dictionary<string, Regex>();
 
         public Regex GetRegexFor(Proxy p)
         {
@@ -23,21 +22,6 @@ namespace DiscordMultiRP.Bot.ProxyResponder
             return r;
         }
 
-        public Regex GetRegexForReset(BotUser u)
-        {
-            if (string.IsNullOrWhiteSpace(u?.ResetCommand))
-            {
-                log.Debug($"User {u?.DiscordId} has no reset command.");
-                return null;
-            }
-
-            if (!resetCache.TryGetValue(u.ResetCommand, out var r))
-            {
-                r = new Regex($@"^\s*{u.ResetCommand}\s*$", RegexOptions.IgnoreCase);
-                resetCache[u.ResetCommand] = r;
-            }
-
-            return r;
-        }
+        public Regex ResetRegex => resetRegex;
     }
 }

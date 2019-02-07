@@ -38,46 +38,24 @@ namespace DiscordMultiRP.Bot.ProxyResponder
         public async Task HandleMessage(SocketMessage msg)
         {
             var botUser = await proxyBuilder.GetBotUserById(msg.Author.Id);
-            if (botUser != null && msg.Channel is ITextChannel c)
+            if (botUser != null && msg.Channel is ITextChannel channel)
             {
                 log.Debug($"Found {botUser.Proxies.Count} registered proxies for user {msg.Author}");
-                var m = MatchProxyContent(msg, botUser);
+                var m = await FindTarget(msg, botUser, channel);
 
                 try
                 {
-                    if (m.IsReset)
+                    switch (m)
                     {
-                        log.Debug($"Reset message for {msg.Author} in {c.Guild.Name}:{c.Name}");
-                        await proxyBuilder.ClearLastProxyForUserAndChannel(botUser, c.Id);
-                        await msg.DeleteAsync();
-                    }
-                    else
-                    {
-                        var (text, p) = (m.Text, m.Proxy);
-                        if (!m.IsSuccess)
-                        {
-                            log.Debug($"Using last proxy for {msg.Author} in {c.Guild.Name}:{c.Name}");
-                            p = await proxyBuilder.GetLastProxyForUserAndChannel(botUser, c.Id);
-                            text = msg.Content;
-                        }
-
-                        if (p != null)
-                        {
-                            if (string.IsNullOrWhiteSpace(text))
-                            {
-                                await ClaimLastMessage(msg, p, botUser);
-                            }
-                            else
-                            {
-                                log.Debug(
-                                    $"{(p.IsGlobal ? "Global" : "Channel")} proxy message for {p.Name} [{msg.Author}] "
-                                    + $"in channel {c.Guild.Name}:{c.Name} ({c.Id})");
-
-                                await proxyBuilder.SetLastProxyForUserAndChannel(p, botUser, c.Id);
-                                await SendMessage(msg, text, p);
-                                await msg.DeleteAsync();
-                            }
-                        }
+                        case ResetMatch _:
+                            await ClearProxy(msg, channel, botUser);
+                            break;
+                        case ClaimMessageMatch c:
+                            await ClaimLastMessage(msg, c.Proxy, botUser);
+                            break;
+                        case ProxyMessageMatch p:
+                            await ResendAsProxy(msg, p, channel, botUser);
+                            break;
                     }
                 }
                 catch (Exception ex)
@@ -85,6 +63,24 @@ namespace DiscordMultiRP.Bot.ProxyResponder
                     log.Warn(ex, $"Can't handle message for {msg.Author}.");
                 }
             }
+        }
+
+        private async Task ClearProxy(SocketMessage msg, ITextChannel c, BotUser botUser)
+        {
+            log.Debug($"Reset message for {msg.Author} in {c.Guild.Name}:{c.Name}");
+            await proxyBuilder.ClearCurrentProxy(botUser, c.Id);
+            await msg.DeleteAsync();
+        }
+
+        private async Task ResendAsProxy(SocketMessage msg, ProxyMessageMatch p, ITextChannel c, BotUser botUser)
+        {
+            log.Debug(
+                $"{(p.Proxy.IsGlobal ? "Global" : "Channel")} proxy message for {p.Proxy.Name} [{msg.Author}] "
+                + $"in channel {c.Guild.Name}:{c.Name} ({c.Id})");
+
+            await proxyBuilder.SetCurrentProxy(p.Proxy, botUser, c.Id);
+            await SendMessage(msg, p.Text, p.Proxy);
+            await msg.DeleteAsync();
         }
 
         private async Task ClaimLastMessage(SocketMessage msg, Proxy proxy, BotUser botUser)
@@ -100,7 +96,7 @@ namespace DiscordMultiRP.Bot.ProxyResponder
             {
                 var username = msg.Author.Username;
                 await msg.DeleteAsync();
-                await proxyBuilder.SetLastProxyForUserAndChannel(proxy, botUser, c.Id);
+                await proxyBuilder.SetCurrentProxy(proxy, botUser, c.Id);
                 await SendMessage(lm, last.Content, proxy, username);
                 await last.DeleteAsync();
             }
@@ -149,13 +145,37 @@ namespace DiscordMultiRP.Bot.ProxyResponder
 
         private static bool IsOwnProxy(IUser author, IUser user) => author.IsWebhook && author.Username.Contains($"[{user.Username}]");
 
-        private MatchDescription MatchProxyContent(SocketMessage msg, BotUser botUser)
+        private async Task<MatchDescription> FindTarget(SocketMessage msg, BotUser botUser, ITextChannel channel)
         {
-            var resetMatch = regexCache.GetRegexForReset(botUser)?.Match(msg.Content);
-            if (resetMatch?.Success ?? false)
+            var md = MatchReset(msg);
+
+            if (md is NoMatch)
             {
-                return new MatchDescription(resetMatch.Groups["text"].Value, botUser);
+                md = FindProxyForMessage(msg, botUser);
             }
+
+            if (md is NoMatch)
+            {
+                md = await FindCurrentProxy(msg, botUser, channel);
+            }
+
+
+            return md;
+        }
+
+        private async Task<MatchDescription> FindCurrentProxy(SocketMessage msg, BotUser botUser, ITextChannel channel)
+        {
+            log.Debug($"Looking for current proxy for {msg.Author} in {channel.Guild.Name}:{channel.Name}");
+            var proxy = await proxyBuilder.GetCurrentProxy(botUser, channel.Id);
+
+            return proxy != null
+                ? MatchDescription.ProxyMatch(proxy, msg.Content)
+                : MatchDescription.NoMatch;
+        }
+
+        private MatchDescription FindProxyForMessage(SocketMessage msg, BotUser botUser)
+        {
+            var md = MatchDescription.NoMatch;
 
             var validProxies = botUser.Proxies
                 .Where(p => p.IsForChannel(msg))
@@ -165,11 +185,19 @@ namespace DiscordMultiRP.Bot.ProxyResponder
                 var proxyMatch = regexCache.GetRegexFor(p).Match(msg.Content);
                 if (proxyMatch.Success)
                 {
-                    return new MatchDescription(proxyMatch.Groups["text"].Value, p);
+                    md = MatchDescription.ProxyMatch(p, proxyMatch.Groups["text"].Value);
                 }
             }
 
-            return new MatchDescription();
+            return md;
+        }
+
+        private MatchDescription MatchReset(IMessage msg)
+        {
+            var resetMatch = regexCache.ResetRegex.Match(msg.Content);
+            return resetMatch.Success
+                ? MatchDescription.ResetMatch
+                : MatchDescription.NoMatch;
         }
     }
 }

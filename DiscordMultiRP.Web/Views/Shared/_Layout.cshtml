@@ -1,10 +1,13 @@
-﻿@using Microsoft.Extensions.Configuration
+﻿@using DiscordMultiRP.Bot.Data
+@using Microsoft.Extensions.Configuration
 @using Microsoft.Extensions.DependencyInjection
 <!DOCTYPE html>
 <html>
 @{
     var cfg = Context.RequestServices.GetRequiredService<IConfiguration>();
     var appName = cfg["AppName"] ?? "DiscordMultiRP Bot Configuration";
+
+    ViewBag.User = Context.Items[typeof(BotUser)];
 }
 <head>
     <meta charset="utf-8" />
@@ -25,7 +28,7 @@
 </head>
 <body>
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+        <nav class="navbar navbar-expand navbar-toggleable navbar-dark bg-dark border-bottom box-shadow mb-3">
             <div class="container">
                 <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">@appName</a>
                 <button class="navbar-toggler" type="button" data-toggle="collapse" data-target=".navbar-collapse" aria-controls="navbarSupportedContent"
@@ -34,20 +37,20 @@
                 </button>
                 <div class="navbar-collapse collapse">
                     <ul class="navbar-nav mr-auto">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
                         @if (User.Identity.IsAuthenticated)
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Proxies" asp-action="Index">Proxies</a>
+                                <a class="nav-link" asp-area="" asp-controller="Proxies" asp-action="Index">Proxies</a>
                             </li>
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Users" asp-action="Index">Users</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Channels" asp-action="Index">Channels</a>
-                            </li>
+                            if (ViewBag.User?.IsAdmin??false)
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link" asp-area="" asp-controller="Users" asp-action="Index">Users</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" asp-area="" asp-controller="Channels" asp-action="Index">Channels</a>
+                                </li>
+                            }
                         }
                     </ul>
                     @if (User.Identity.IsAuthenticated)
@@ -58,13 +61,13 @@
                         @if (User.Identity.IsAuthenticated)
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Account" asp-action="Logout">Logout</a>
+                                <a class="nav-link" asp-area="" asp-controller="Account" asp-action="Logout">Logout</a>
                             </li>
                         }
                         else
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Account" asp-action="Login">Login</a>
+                                <a class="nav-link" asp-area="" asp-controller="Account" asp-action="Login">Login</a>
                             </li>
                         }
                     </ul>

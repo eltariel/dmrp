@@ -4,31 +4,42 @@ namespace DiscordMultiRP.Bot.ProxyResponder
 {
     internal class MatchDescription
     {
-        public MatchDescription() : this(false)
-        {
-        }
+        public static MatchDescription NoMatch { get; } = new NoMatch();
+        public static MatchDescription ResetMatch { get; } = new ResetMatch();
 
-        public MatchDescription(string text, Proxy proxy) : this(true, text: text, proxy: proxy)
+        public static MatchDescription ProxyMatch(Proxy proxy, string text)
         {
+            return string.IsNullOrWhiteSpace(text)
+                ? (MatchDescription)new ClaimMessageMatch(proxy)
+                : (MatchDescription)new ProxyMessageMatch(proxy, text);
         }
+    }
 
-        public MatchDescription(string text, BotUser botUser) : this(true, text: text, botUser: botUser)
+    internal class ProxyMessageMatch : MatchDescription
+    {
+        public ProxyMessageMatch(Proxy proxy = null, string text = null)
         {
-        }
-
-        private MatchDescription(bool isSuccess, string text = null, Proxy proxy = null, BotUser botUser = null)
-        {
-            IsSuccess = isSuccess;
             Proxy = proxy;
-            BotUser = botUser;
             Text = text;
         }
 
-        public bool IsSuccess { get; }
         public Proxy Proxy { get; }
-        public BotUser BotUser { get; }
         public string Text { get; }
-
-        public bool IsReset => BotUser != null;
     }
+
+    internal class ClaimMessageMatch : MatchDescription
+    {
+        public ClaimMessageMatch(Proxy proxy = null)
+        {
+            Proxy = proxy;
+        }
+
+        public Proxy Proxy { get; }
+    }
+
+    internal class ResetMatch : MatchDescription
+    {
+    }
+
+    internal class NoMatch : MatchDescription { }
 }
