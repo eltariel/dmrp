@@ -2,11 +2,11 @@
 @model IEnumerable<ProxyViewModel>
 
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Proxies";
     var user = ViewBag.User as BotUser;
 }
 
-<h1>Index</h1>
+<h1>@ViewData["Title"]</h1>
 
 <p>
     <a asp-action="Create">Create New</a>

@@ -22,6 +22,7 @@ namespace DiscordMultiRP.Web.Models
             HasAvatar = proxy.AvatarGuid != Guid.Empty && !string.IsNullOrWhiteSpace(proxy.AvatarContentType);
             Prefix = proxy.Prefix;
             Suffix = proxy.Suffix;
+            Biography = proxy.Biography;
             IsGlobal = proxy.IsGlobal;
             Channels = proxy.Channels?.Select(c => c.Channel.DiscordId).ToList();
             DbChannels = proxy.Channels;
@@ -30,6 +31,7 @@ namespace DiscordMultiRP.Web.Models
             UserDiscordId = proxy.BotUser.DiscordId;
             DiscordChannels = discordChannels?.ToList();
         }
+
 
         public int Id { get; set; }
 
@@ -41,7 +43,8 @@ namespace DiscordMultiRP.Web.Models
         public string Prefix { get; set; }
         public string Suffix { get; set; }
 
-        public bool IsReset { get; set; }
+        public string Biography { get; set; }
+
         public bool IsGlobal { get; set; }
 
         public List<ulong> Channels { get; set; }

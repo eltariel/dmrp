@@ -1,13 +1,12 @@
 ﻿@model ProxyViewModel
 
 @{
-    ViewData["Title"] = "Details";
+    ViewData["Title"] = $"Proxy: {Model.Name} [{Model.UserName}]";
 }
 
-<h1>Details</h1>
+<h1>@ViewData["Title"]</h1>
 
 <div>
-    <h4>Proxy</h4>
     <hr />
     <dl class="row">
         <dt class="col-sm-2">
@@ -17,16 +16,16 @@
             @Html.DisplayFor(model => model.Name)
         </dd>
         <dt class="col-sm-2">
-            @Html.DisplayNameFor(model => model.Prefix)
+            Proxy command
         </dt>
         <dd class="col-sm-10">
-            @Html.DisplayFor(model => model.Prefix)
+            @Html.DisplayFor(model => model.Prefix) [text] @Html.DisplayFor(model => model.Suffix)
         </dd>
         <dt class="col-sm-2">
-            @Html.DisplayNameFor(model => model.Suffix)
+            @Html.DisplayNameFor(model => model.Biography)
         </dt>
         <dd class="col-sm-10">
-            @Html.DisplayFor(model => model.Suffix)
+            @Html.DisplayFor(model => model.Biography)
         </dd>
         @if (ViewBag.User.IsAllowedGlobal)
         {

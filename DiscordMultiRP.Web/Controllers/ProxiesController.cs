@@ -140,7 +140,7 @@ namespace DiscordMultiRP.Web.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(
-            [Bind("Id,UserDiscordId,Name,Prefix,Suffix,IsReset,IsGlobal,Channels,Avatar")]
+            [Bind("Id,UserDiscordId,Name,Prefix,Suffix,Biography,IsGlobal,Channels,Avatar")]
             ProxyViewModel pvm)
         {
             var botUser = GetBotUserFromContext();
@@ -169,6 +169,7 @@ namespace DiscordMultiRP.Web.Controllers
                     Name = pvm.Name,
                     Prefix = pvm.Prefix,
                     Suffix = pvm.Suffix,
+                    Biography = pvm.Biography,
                     IsGlobal = pvm.IsGlobal,
                     BotUser = proxyUser,
                 };
@@ -218,7 +219,7 @@ namespace DiscordMultiRP.Web.Controllers
         // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Prefix,Suffix,IsReset,IsGlobal,Channels,Avatar")]
+        public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Prefix,Suffix,Biography,IsGlobal,Channels,Avatar")]
             ProxyViewModel pvm)
         {
             var botUser = GetBotUserFromContext();
@@ -251,6 +252,7 @@ namespace DiscordMultiRP.Web.Controllers
                         proxy.Name = pvm.Name;
                         proxy.Prefix = pvm.Prefix;
                         proxy.Suffix = pvm.Suffix;
+                        proxy.Biography = pvm.Biography;
 
                         if (!await UpdateProxyChannels(proxy, pvm))
                         {

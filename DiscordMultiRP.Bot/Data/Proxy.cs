@@ -17,6 +17,8 @@ namespace DiscordMultiRP.Bot.Data
         public string Prefix { get; set; }
         public string Suffix { get; set; }
 
+        public string Biography { get; set; }
+
         public bool IsGlobal { get; set; }
 
         public ICollection<ProxyChannel> Channels { get; set; }

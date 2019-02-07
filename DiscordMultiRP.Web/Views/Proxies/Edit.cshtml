@@ -1,12 +1,10 @@
 ﻿@model ProxyViewModel
 
 @{
-    ViewData["Title"] = "Edit";
+    ViewData["Title"] = $"Edit Proxy: {Model.Name} [{Model.UserName}]";
 }
 
-<h1>Edit</h1>
-
-<h4>Proxy</h4>
+<h1>@ViewData["Title"]</h1>
 <hr />
 <div class="row">
     <div class="col-md-4">
@@ -27,6 +25,11 @@
                 <label asp-for="Suffix" class="control-label"></label>
                 <input asp-for="Suffix" class="form-control" />
                 <span asp-validation-for="Suffix" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Biography" class="control-label"></label>
+                <textarea asp-for="Biography" class="form-control"></textarea>
+                <span asp-validation-for="Biography" class="text-danger"></span>
             </div>
             @if (ViewBag.User.IsAllowedGlobal)
             {
