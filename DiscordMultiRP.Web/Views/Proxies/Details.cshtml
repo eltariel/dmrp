@@ -4,76 +4,51 @@
     ViewData["Title"] = $"Proxy: {Model.Name} [{Model.UserName}]";
 }
 
-<h1>@ViewData["Title"]</h1>
-
-<div>
-    <hr />
-    <dl class="row">
-        <dt class="col-sm-2">
-            @Html.DisplayNameFor(model => model.Name)
-        </dt>
-        <dd class="col-sm-10">
-            @Html.DisplayFor(model => model.Name)
-        </dd>
-        <dt class="col-sm-2">
-            Proxy command
-        </dt>
-        <dd class="col-sm-10">
-            @Html.DisplayFor(model => model.Prefix) [text] @Html.DisplayFor(model => model.Suffix)
-        </dd>
-        <dt class="col-sm-2">
-            @Html.DisplayNameFor(model => model.Biography)
-        </dt>
-        <dd class="col-sm-10">
-            @Html.DisplayFor(model => model.Biography)
-        </dd>
-        @if (ViewBag.User.IsAllowedGlobal)
-        {
-            <dt class="col-sm-2">
-                @Html.DisplayNameFor(model => model.IsGlobal)
-            </dt>
-            <dd class="col-sm-10">
-                @Html.DisplayFor(model => model.IsGlobal)
+<div class="media">
+    <img class="mr-3 rounded-circle avatar" src="@Url.Action("View", "Avatar", new {id = Model.AvatarGuid})" alt="Avatar for @Model.Name" />
+    <div class="media-body">
+        <h2 class="mt-0">@Model.Name [@Model.UserName]</h2>
+        <dl class="row">
+            <dt class="col-1">Command:</dt>
+            <dd class="col-11">@Model.Prefix<span class="text-muted">[text]</span>@Model.Suffix</dd>
+            <dt class="col-1">About:</dt>
+            <dd class="col-11">
+                @if (string.IsNullOrWhiteSpace(Model.Biography))
+                {
+                    <span class="text-muted font-italic">No biography</span>
+                }
+                else
+                {
+                    <span>@Model.Biography</span>
+                }
             </dd>
-        }
-        @if (!Model.IsGlobal)
-        {
-            <dt class="col-sm-2">
-                @Html.DisplayNameFor(model => model.Channels)
-            </dt>
-            <dd class="col-sm-10">
-                <ul>
-                    @foreach (var channel in Model.DiscordChannels)
-                    {
-                        var dbChannel = Model.DbChannels.Select(c => c.Channel).FirstOrDefault(c => c.DiscordId == channel.Id);
-                        if (dbChannel != null)
+            <dt class="col-1">Channels:</dt>
+            <dd class="col-11">
+                @if (Model.IsGlobal)
+                {
+                    <span class="text-muted font-italic">Global proxy</span>
+                }
+                else
+                {
+                    <ul>
+                        @foreach (var c in Model.DiscordChannels)
                         {
-                            <li><a asp-action="Details" asp-controller="Channels" asp-route-id="@dbChannel.Id">@channel.Guild.Name: @channel.Name</a></li>
+                            var dbChannel = Model.DbChannels.FirstOrDefault(d => d.Channel.DiscordId == c.Id);
+                            <li>
+                                <a href="@Url.Action("Details", "Channels", new{id=dbChannel.Channel.Id})">@c.Guild.Name: @c.Name</a>
+                            </li>
                         }
-                        else
-                        {
-                            <li>Guild.Name: @channel.Name</li>
-                        }
-                    }
-                </ul>
+                    </ul>
+                }
             </dd>
-        }
-        <dt class="col-sm-2">
-            @Html.DisplayNameFor(model => model.Avatar)
-        </dt>
-        <dd class="col-sm-10">
-            @if (Model.HasAvatar)
-            {
-                <img class="avatar" src="@Url.Action("View", "Avatar", new {id = Model.AvatarGuid})" alt="Avatar for @Model.Name"/>
-            }
-            else
-            {
-                <p>No avatar.</p>
-            }
-        </dd>
-    </dl>
+        </dl>
+    </div>
 </div>
+<hr />
 <div>
-    <a asp-action="Edit" asp-route-id="@Model.Id">Edit</a> |
+    @if (ViewBag.User.DiscordId == Model.UserDiscordId || ViewBag.User.IsAdmin)
+    {
+        <a asp-action="Edit" asp-route-id="@Model.Id">Edit</a>@: ||
+    }
     <a asp-action="Index">Back to List</a>
 </div>
