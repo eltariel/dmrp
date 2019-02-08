@@ -1,5 +1,4 @@
-﻿using DiscordMultiRP.Bot.Data;
-using DiscordMultiRP.Web.Models;
+﻿using DiscordMultiRP.Web.Models;
 using DiscordMultiRP.Web.Util;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,6 +10,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
+using DiscordMultiRP.Bot.Data;
 using Microsoft.Extensions.Logging;
 using static MoreLinq.Extensions.DistinctByExtension;
 
@@ -53,19 +53,16 @@ namespace DiscordMultiRP.Web.Controllers
             {
                 pvms = contextProxies.Select(p =>
                 {
-                    var username = discord?.GetUser(p.BotUser.DiscordId) is IUser du
-                        ? $"{du.Username}#{du.Discriminator}"
-                        : $"Discord UserId: {p.BotUser.DiscordId}";
-
-                    return new ProxyViewModel(p, username);
+                    var user = discord?.GetUser(p.BotUser.DiscordId);
+                    return new ProxyViewModel(p, user);
                 });
             }
             else
             {
-                pvms = contextProxies.Select(p => new ProxyViewModel(p));
+                pvms = contextProxies.Select(p => new ProxyViewModel(p, discord.CurrentUser));
             }
 
-            return View(pvms.OrderBy(p => p.UserId != botUser.Id)
+            return View(pvms.OrderBy(p => p.BotUserId != botUser.Id)
                 .ThenBy(p => p.UserName)
                 .ThenBy(p => p.Name)
                 .ToList());
@@ -90,13 +87,15 @@ namespace DiscordMultiRP.Web.Controllers
             }
 
             var discord = await discordHelper.LoginBot();
-            var discordUser = discord.GetUser(DiscordUserId);
-            var channels = discordUser
+            var webUser = discord.GetUser(DiscordUserId);
+            var proxyUser = discord.GetUser(proxy.BotUser.DiscordId);
+
+            var channels = webUser
                 .MutualGuilds
                 .SelectMany(g => g.TextChannels)
                 .Where(c => proxy.Channels.Select(pc => pc.Channel.DiscordId).Contains(c.Id))
                 .ToList();
-            var pvm = new ProxyViewModel(proxy, $"{discordUser.Username}#{discordUser.Discriminator}", channels);
+            var pvm = new ProxyViewModel(proxy, proxyUser, channels);
 
             return View(pvm);
         }
@@ -139,21 +138,16 @@ namespace DiscordMultiRP.Web.Controllers
         // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(
-            [Bind("Id,UserDiscordId,Name,Prefix,Suffix,Biography,IsGlobal,Channels,Avatar")]
+        public async Task<IActionResult> Create([Bind("Id,DiscordUserId,Name,Prefix,Suffix,Biography,IsGlobal,Channels,Avatar")]
             ProxyViewModel pvm)
         {
             var botUser = GetBotUserFromContext();
             if (ModelState.IsValid)
             {
-                if (botUser == null || botUser.Role == Role.None)
+                var forbidden = CheckPermission(pvm, botUser);
+                if (forbidden != null)
                 {
-                    return Forbid();
-                }
-
-                if (!botUser.IsAdmin && pvm.UserDiscordId != botUser.DiscordId)
-                {
-                    return Forbid();
+                    return forbidden;
                 }
 
                 if (!botUser.IsAllowedGlobal)
@@ -161,8 +155,8 @@ namespace DiscordMultiRP.Web.Controllers
                     pvm.IsGlobal = false;
                 }
 
-                var proxyUser = await db.BotUsers.FirstOrDefaultAsync(u => u.DiscordId == pvm.UserDiscordId) ??
-                                new BotUser {DiscordId = pvm.UserDiscordId};
+                var proxyUser = await db.BotUsers.FirstOrDefaultAsync(u => u.DiscordId == pvm.DiscordUserId) ??
+                                new BotUser {DiscordId = pvm.DiscordUserId};
 
                 var proxy = new Proxy
                 {
@@ -211,7 +205,7 @@ namespace DiscordMultiRP.Web.Controllers
                 discord.GetUser(DiscordUserId),
                 discord.GetUser(proxy.BotUser.DiscordId));
 
-            return View(new ProxyViewModel(proxy));
+            return View(new ProxyViewModel(proxy, discord.CurrentUser));
         }
 
         // POST: Proxies/Edit/5
@@ -219,8 +213,7 @@ namespace DiscordMultiRP.Web.Controllers
         // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Prefix,Suffix,Biography,IsGlobal,Channels,Avatar")]
-            ProxyViewModel pvm)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Prefix,Suffix,Biography,IsGlobal,Channels,Avatar")] ProxyViewModel pvm)
         {
             var botUser = GetBotUserFromContext();
             if (id != pvm.Id)
@@ -234,6 +227,12 @@ namespace DiscordMultiRP.Web.Controllers
                 {
                     if (botUser != null)
                     {
+                        var forbidden = CheckPermission(pvm, botUser);
+                        if (forbidden != null)
+                        {
+                            return forbidden;
+                        }
+
                         if (!botUser.IsAllowedGlobal)
                         {
                             pvm.IsGlobal = false;
@@ -422,6 +421,21 @@ namespace DiscordMultiRP.Web.Controllers
             var botUser = HttpContext.Items[typeof(BotUser)] as BotUser;
             ViewBag.User = botUser;
             return botUser;
+        }
+
+        private IActionResult CheckPermission(ProxyViewModel pvm, BotUser botUser)
+        {
+            if (botUser == null || botUser.Role == Role.None)
+            {
+                return Forbid();
+            }
+
+            if (!botUser.IsAdmin && pvm.DiscordUserId != botUser.DiscordId)
+            {
+                return Forbid();
+            }
+
+            return null;
         }
     }
 }

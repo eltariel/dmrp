@@ -13,9 +13,9 @@
             @if (ViewBag.User.IsAdmin)
             {
                 <div class="form-group">
-                    <label asp-for="UserDiscordId" class="control-label"></label>
-                    <select asp-for="UserDiscordId" asp-items="ViewBag.VisibleUsers" class="form-control"></select>
-                    <span asp-validation-for="UserDiscordId" class="text-danger"></span>
+                    <label asp-for="DiscordUserId" class="control-label"></label>
+                    <select asp-for="DiscordUserId" asp-items="ViewBag.VisibleUsers" class="form-control"></select>
+                    <span asp-validation-for="DiscordUserId" class="text-danger"></span>
                 </div>
             }
             else

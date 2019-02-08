@@ -15,7 +15,6 @@ using Microsoft.AspNetCore.Authorization;
 namespace DiscordMultiRP.Web.Controllers
 {
     [RequireDiscord]
-    [Authorize(Policy = DbRoleRequirement.RequiresAdmin)]
     public class ChannelsController : Controller
     {
         private readonly ProxyDataContext db;
@@ -62,6 +61,7 @@ namespace DiscordMultiRP.Web.Controllers
         }
 
         // GET: Channels/Create
+        [Authorize(Policy = DbRoleRequirement.RequiresAdmin)]
         public async Task<IActionResult> Create(ulong id)
         {
             var discord = await discordHelper.LoginBot();
@@ -85,6 +85,7 @@ namespace DiscordMultiRP.Web.Controllers
         // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = DbRoleRequirement.RequiresAdmin)]
         public async Task<IActionResult> Create([Bind("Id,DiscordId,IsMonitored")] Channel channel)
         {
             if (ModelState.IsValid)
@@ -93,10 +94,12 @@ namespace DiscordMultiRP.Web.Controllers
                 await db.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
+
             return View(channel);
         }
 
         // GET: Channels/Edit/5
+        [Authorize(Policy = DbRoleRequirement.RequiresAdmin)]
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
@@ -109,6 +112,7 @@ namespace DiscordMultiRP.Web.Controllers
             {
                 return NotFound();
             }
+
             return View(channel);
         }
 
@@ -117,6 +121,7 @@ namespace DiscordMultiRP.Web.Controllers
         // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = DbRoleRequirement.RequiresAdmin)]
         public async Task<IActionResult> Edit(int id, [Bind("Id,DiscordId,IsMonitored")] Channel channel)
         {
             if (id != channel.Id)
@@ -142,12 +147,15 @@ namespace DiscordMultiRP.Web.Controllers
                         throw;
                     }
                 }
+
                 return RedirectToAction(nameof(Index));
             }
+
             return View(channel);
         }
 
         // GET: Channels/Delete/5
+        [Authorize(Policy = DbRoleRequirement.RequiresAdmin)]
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -168,6 +176,7 @@ namespace DiscordMultiRP.Web.Controllers
         // POST: Channels/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = DbRoleRequirement.RequiresAdmin)]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var channel = await db.Channels.FindAsync(id);
@@ -176,11 +185,7 @@ namespace DiscordMultiRP.Web.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        private bool ChannelExists(int id)
-        {
-            return db.Channels.Any(e => e.Id == id);
-        }
-
+        [Authorize(Policy = DbRoleRequirement.RequiresAdmin)]
         public async Task<IActionResult> Message(int id)
         {
             var dbChannel = await db.Channels.FirstOrDefaultAsync(c => c.Id == id);
@@ -197,6 +202,7 @@ namespace DiscordMultiRP.Web.Controllers
         }
 
         [HttpPost]
+        [Authorize(Policy = DbRoleRequirement.RequiresAdmin)]
         public async Task<IActionResult> Message(SendChannelMessageViewModel viewModel)
         {
             if (ModelState.IsValid)
@@ -209,7 +215,12 @@ namespace DiscordMultiRP.Web.Controllers
                 }
             }
 
-            return RedirectToAction(nameof(Message), new { id = viewModel.ChannelDatabaseId });
+            return RedirectToAction(nameof(Message), new {id = viewModel.ChannelDatabaseId});
+        }
+
+        private bool ChannelExists(int id)
+        {
+            return db.Channels.Any(e => e.Id == id);
         }
     }
 }

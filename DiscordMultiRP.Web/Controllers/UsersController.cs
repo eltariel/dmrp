@@ -13,7 +13,6 @@ using Microsoft.Extensions.Configuration;
 
 namespace DiscordMultiRP.Web.Controllers
 {
-    [Authorize(Policy = DbRoleRequirement.RequiresAdmin)]
     [RequireDiscord]
     public class UsersController : Controller
     {
@@ -63,6 +62,7 @@ namespace DiscordMultiRP.Web.Controllers
         }
 
         // GET: Users/Create
+        [Authorize(Policy = DbRoleRequirement.RequiresAdmin)]
         public async Task<IActionResult> Create()
         {
             var discord = await discordHelper.LoginBot();
@@ -88,6 +88,7 @@ namespace DiscordMultiRP.Web.Controllers
         // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = DbRoleRequirement.RequiresAdmin)]
         public async Task<IActionResult> Create([Bind("Id,DiscordId,Role,ResetCommand")] BotUser botUser)
         {
             if (ModelState.IsValid)
@@ -100,6 +101,7 @@ namespace DiscordMultiRP.Web.Controllers
         }
 
         // GET: Users/Edit/5
+        [Authorize(Policy = DbRoleRequirement.RequiresAdmin)]
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
@@ -120,6 +122,7 @@ namespace DiscordMultiRP.Web.Controllers
         // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = DbRoleRequirement.RequiresAdmin)]
         public async Task<IActionResult> Edit(int id, [Bind("Id,DiscordId,Role,ResetCommand")] BotUser botUser)
         {
             if (id != botUser.Id)
@@ -151,6 +154,7 @@ namespace DiscordMultiRP.Web.Controllers
         }
 
         // GET: Users/Delete/5
+        [Authorize(Policy = DbRoleRequirement.RequiresAdmin)]
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -171,6 +175,7 @@ namespace DiscordMultiRP.Web.Controllers
         // POST: Users/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = DbRoleRequirement.RequiresAdmin)]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var user = await db.BotUsers.FindAsync(id);
@@ -183,6 +188,5 @@ namespace DiscordMultiRP.Web.Controllers
         {
             return db.BotUsers.Any(e => e.Id == id);
         }
-
     }
 }

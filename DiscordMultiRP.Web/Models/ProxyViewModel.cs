@@ -10,11 +10,12 @@ namespace DiscordMultiRP.Web.Models
 {
     public class ProxyViewModel
     {
+
         public ProxyViewModel()
         {
         }
 
-        public ProxyViewModel(Proxy proxy, string userName = null, IEnumerable<ITextChannel> discordChannels = null)
+        public ProxyViewModel(Proxy proxy, SocketUser user, IEnumerable<ITextChannel> discordChannels = null)
         {
             Id = proxy.Id;
             Name = proxy.Name;
@@ -26,9 +27,12 @@ namespace DiscordMultiRP.Web.Models
             IsGlobal = proxy.IsGlobal;
             Channels = proxy.Channels?.Select(c => c.Channel.DiscordId).ToList();
             DbChannels = proxy.Channels;
-            UserId = proxy.BotUser.Id;
-            UserName = userName;
-            UserDiscordId = proxy.BotUser.DiscordId;
+            User = user;
+            BotUserId = proxy.BotUser.Id;
+            DiscordUserId = proxy.BotUser.DiscordId;
+            UserName = user != null
+                ? $"{user.Username}#{user.Discriminator}"
+                : $"Unknown Discord User {DiscordUserId}";
             DiscordChannels = discordChannels?.ToList();
         }
 
@@ -50,9 +54,10 @@ namespace DiscordMultiRP.Web.Models
         public List<ulong> Channels { get; set; }
         public ICollection<ProxyChannel> DbChannels { get; set; }
 
-        public int UserId { get; set; }
+        public SocketUser User { get; set; }
+        public int BotUserId { get; set; }
+        public ulong DiscordUserId { get; set; }
         public string UserName { get; set; }
-        public ulong UserDiscordId { get; set; }
         public IEnumerable<ITextChannel> DiscordChannels { get; set; }
     }
 }

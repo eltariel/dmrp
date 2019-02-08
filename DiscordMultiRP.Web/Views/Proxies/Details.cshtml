@@ -46,7 +46,7 @@
 </div>
 <hr />
 <div>
-    @if (ViewBag.User.DiscordId == Model.UserDiscordId || ViewBag.User.IsAdmin)
+    @if (ViewBag.User.DiscordId == Model.DiscordUserId || ViewBag.User.IsAdmin)
     {
         <a asp-action="Edit" asp-route-id="@Model.Id">Edit</a>@: ||
     }
