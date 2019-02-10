@@ -29,5 +29,11 @@ namespace DiscordMultiRP.Bot.Data
         public bool IsAllowedGlobal => Role == Role.Admin || Role == Role.Global;
 
         public bool IsAdmin => Role == Role.Admin;
+
+        public bool CanEditFor(BotUser b) => CanEditFor(b?.DiscordId ?? 0);
+        public bool CanEdit(Proxy p) => CanEditFor(p.BotUser);
+        public bool CanEdit(Channel c) => IsAdmin;
+
+        public bool CanEditFor(ulong discordUserId) => IsAdmin || DiscordId == discordUserId;
     }
 }

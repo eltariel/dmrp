@@ -6,8 +6,6 @@
 @{
     var cfg = Context.RequestServices.GetRequiredService<IConfiguration>();
     var appName = cfg["AppName"] ?? "DiscordMultiRP Bot Configuration";
-
-    ViewBag.User = Context.Items[typeof(BotUser)];
 }
 <head>
     <meta charset="utf-8" />

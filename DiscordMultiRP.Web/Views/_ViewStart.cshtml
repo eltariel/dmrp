@@ -1,3 +1,5 @@
-﻿@{
+﻿@using DiscordMultiRP.Bot.Data
+@{
     Layout = "_Layout";
+    ViewBag.User = Context.Items[typeof(BotUser)];
 }

@@ -1,4 +1,6 @@
-﻿using DiscordMultiRP.Bot.ProxyResponder;
+﻿using System.Linq;
+using System.Threading.Tasks;
+using DiscordMultiRP.Bot.ProxyResponder;
 using Microsoft.EntityFrameworkCore;
 
 namespace DiscordMultiRP.Bot.Data
@@ -19,6 +21,12 @@ namespace DiscordMultiRP.Bot.Data
         public DbSet<Channel> Channels { get; set; }
         public DbSet<UserChannel> UserChannels { get; set; }
         public DbSet<ProxyChannel> ProxyChannels { get; set; }
+
+        public IQueryable<Proxy> ProxyDetails => Proxies
+            .Include(p => p.BotUser)
+            .Include(p => p.Channels).ThenInclude(c => c.Channel);
+
+        public Task<Proxy> FindProxyByIdAsync(int? id) => ProxyDetails.FirstOrDefaultAsync(p => p.Id == id);
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
