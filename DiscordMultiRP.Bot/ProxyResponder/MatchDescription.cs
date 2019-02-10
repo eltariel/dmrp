@@ -1,4 +1,5 @@
-﻿using DiscordMultiRP.Bot.Data;
+﻿using Discord.WebSocket;
+using DiscordMultiRP.Bot.Data;
 
 namespace DiscordMultiRP.Bot.ProxyResponder
 {
@@ -7,9 +8,13 @@ namespace DiscordMultiRP.Bot.ProxyResponder
         public static MatchDescription NoMatch { get; } = new NoMatch();
         public static MatchDescription ResetMatch { get; } = new ResetMatch();
 
-        public static MatchDescription ProxyMatch(Proxy proxy, string text)
+        public static MatchDescription ProxyMatch(Proxy proxy, SocketMessage msg, string text)
         {
-            return string.IsNullOrWhiteSpace(text)
+            var shouldClaim = string.IsNullOrWhiteSpace(text) &&
+                              msg.Attachments.Count == 0 &&
+                              msg.Embeds.Count == 0;
+
+            return shouldClaim
                 ? (MatchDescription)new ClaimMessageMatch(proxy)
                 : (MatchDescription)new ProxyMessageMatch(proxy, text);
         }

@@ -169,7 +169,7 @@ namespace DiscordMultiRP.Bot.ProxyResponder
             var proxy = await proxyBuilder.GetCurrentProxy(botUser, channel.Id);
 
             return proxy != null
-                ? MatchDescription.ProxyMatch(proxy, msg.Content)
+                ? MatchDescription.ProxyMatch(proxy, msg, msg.Content)
                 : MatchDescription.NoMatch;
         }
 
@@ -185,7 +185,7 @@ namespace DiscordMultiRP.Bot.ProxyResponder
                 var proxyMatch = regexCache.GetRegexFor(p).Match(msg.Content);
                 if (proxyMatch.Success)
                 {
-                    md = MatchDescription.ProxyMatch(p, proxyMatch.Groups["text"].Value);
+                    md = MatchDescription.ProxyMatch(p, msg, proxyMatch.Groups["text"].Value);
                 }
             }
 
