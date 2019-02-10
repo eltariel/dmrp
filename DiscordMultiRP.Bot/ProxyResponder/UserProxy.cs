@@ -128,7 +128,6 @@ namespace DiscordMultiRP.Bot.ProxyResponder
                     // TODO: Single multipart request
                     var stream = await new HttpClient().GetStreamAsync(a.Url);
                     await hc.SendFileAsync(stream, a.Filename, first ? text : string.Empty,
-                        embeds: msg.Embeds.Select(e => (Embed)e),
                         username: username,
                         avatarUrl: avatarUrl);
                     first = false;
@@ -138,7 +137,6 @@ namespace DiscordMultiRP.Bot.ProxyResponder
             {
                 await hc.SendMessageAsync(text,
                     username: username,
-                    embeds: msg.Embeds.Select(e => (Embed)e),
                     avatarUrl: avatarUrl);
             }
         }
