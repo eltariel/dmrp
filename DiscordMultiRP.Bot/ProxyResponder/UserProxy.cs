@@ -1,10 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Data.Common;
 using System.Linq;
-using System.Net.Http;
 using System.Threading.Tasks;
-using System.Xml.Xsl;
 using Discord;
 using Discord.WebSocket;
 using DiscordMultiRP.Bot.Data;
@@ -18,21 +14,17 @@ namespace DiscordMultiRP.Bot.ProxyResponder
         private static readonly Logger log = LogManager.GetCurrentClassLogger();
 
         private readonly IProxyBuilder proxyBuilder;
-        private readonly IConfiguration cfg;
         private readonly RegexCache regexCache;
         private readonly WebhookCache webhookCache;
-        private readonly string avatarBaseUrl;
+        private readonly ProxyHelper helper;
 
         public UserProxy(DiscordSocketClient discord, IProxyBuilder proxyBuilder, IConfiguration cfg)
         {
             this.proxyBuilder = proxyBuilder;
-            this.cfg = cfg;
             regexCache = new RegexCache();
             webhookCache = new WebhookCache(discord);
 
-            var host = cfg["Discord:bot-url"] ?? "http://localhost";
-            host += host.EndsWith('/') ? string.Empty : "/";
-            avatarBaseUrl = $"{host}Avatar/View";
+            helper = new ProxyHelper(discord, proxyBuilder, cfg);
         }
 
         public async Task HandleMessage(SocketMessage msg)
@@ -50,10 +42,10 @@ namespace DiscordMultiRP.Bot.ProxyResponder
                         case ResetMatch _:
                             await ClearProxy(msg, channel, botUser);
                             break;
-                        case ClaimMessageMatch c:
+                        case ClaimMatch c:
                             await ClaimLastMessage(msg, c.Proxy, botUser);
                             break;
-                        case ProxyMessageMatch p:
+                        case MessageMatch p:
                             await ResendAsProxy(msg, p, channel, botUser);
                             break;
                     }
@@ -72,7 +64,7 @@ namespace DiscordMultiRP.Bot.ProxyResponder
             await msg.DeleteAsync();
         }
 
-        private async Task ResendAsProxy(SocketMessage msg, ProxyMessageMatch p, ITextChannel c, BotUser botUser)
+        private async Task ResendAsProxy(SocketMessage msg, MessageMatch p, ITextChannel c, BotUser botUser)
         {
             log.Debug(
                 $"{(p.Proxy.IsGlobal ? "Global" : "Channel")} proxy message for {p.Proxy.Name} [{msg.Author}] "
@@ -94,56 +86,28 @@ namespace DiscordMultiRP.Bot.ProxyResponder
 
             if (last is IMessage lm)
             {
-                var username = msg.Author.Username;
                 await msg.DeleteAsync();
                 await proxyBuilder.SetCurrentProxy(proxy, botUser, c.Id);
-                await SendMessage(lm, last.Content, proxy, username);
+                await SendMessage(lm, last.Content, proxy);
                 await last.DeleteAsync();
             }
         }
 
-        private async Task SendMessage(IMessage msg, string text, Proxy proxy, string overrideUsername = null)
+        private async Task SendMessage(IMessage msg, string text, Proxy proxy)
         {
             if (!(msg.Channel is ITextChannel c))
             {
-                log.Debug($"Channel {msg.Channel} is not a text channel.");
+                log.Error($"Channel {msg.Channel} is not a text channel.");
                 return;
             }
 
-            var avatarUrl = proxy.HasAvatar
-                ? $"{avatarBaseUrl}/{proxy.AvatarGuid}"
-                : msg.Author.GetAvatarUrl();
-
-            log.Debug($"Proxy avatar url: {avatarUrl}");
-
-            var hc = await webhookCache.GetWebhook(c);
-
-            var username = $"{proxy.Name} [{overrideUsername ?? msg.Author.Username}]";
-
-            if (msg.Attachments.Any())
-            {
-                var first = true;
-                foreach (var a in msg.Attachments)
-                {
-                    // TODO: Single multipart request
-                    var stream = await new HttpClient().GetStreamAsync(a.Url);
-                    await hc.SendFileAsync(stream, a.Filename, first ? text : string.Empty,
-                        username: username,
-                        avatarUrl: avatarUrl);
-                    first = false;
-                }
-            }
-            else
-            {
-                await hc.SendMessageAsync(text,
-                    username: username,
-                    avatarUrl: avatarUrl);
-            }
+            var webhook = await webhookCache.GetWebhook(c);
+            await helper.SendMessage(webhook, proxy, text, msg.Attachments);
         }
 
         private static bool IsOwnProxy(IUser author, IUser user) => author.IsWebhook && author.Username.Contains($"[{user.Username}]");
 
-        private async Task<MatchDescription> FindTarget(SocketMessage msg, BotUser botUser, ITextChannel channel)
+        private async Task<ProxyMatch> FindTarget(SocketMessage msg, BotUser botUser, ITextChannel channel)
         {
             var md = MatchReset(msg);
 
@@ -161,19 +125,19 @@ namespace DiscordMultiRP.Bot.ProxyResponder
             return md;
         }
 
-        private async Task<MatchDescription> FindCurrentProxy(SocketMessage msg, BotUser botUser, ITextChannel channel)
+        private async Task<ProxyMatch> FindCurrentProxy(SocketMessage msg, BotUser botUser, ITextChannel channel)
         {
             log.Debug($"Looking for current proxy for {msg.Author} in {channel.Guild.Name}:{channel.Name}");
             var proxy = await proxyBuilder.GetCurrentProxy(botUser, channel.Id);
 
             return proxy != null
-                ? MatchDescription.ProxyMatch(proxy, msg, msg.Content)
-                : MatchDescription.NoMatch;
+                ? ProxyMatch.GetMatch(proxy, msg, msg.Content)
+                : ProxyMatch.NoMatch;
         }
 
-        private MatchDescription FindProxyForMessage(SocketMessage msg, BotUser botUser)
+        private ProxyMatch FindProxyForMessage(SocketMessage msg, BotUser botUser)
         {
-            var md = MatchDescription.NoMatch;
+            var md = ProxyMatch.NoMatch;
 
             var validProxies = botUser.Proxies
                 .Where(p => p.IsForChannel(msg))
@@ -183,19 +147,19 @@ namespace DiscordMultiRP.Bot.ProxyResponder
                 var proxyMatch = regexCache.GetRegexFor(p).Match(msg.Content);
                 if (proxyMatch.Success)
                 {
-                    md = MatchDescription.ProxyMatch(p, msg, proxyMatch.Groups["text"].Value);
+                    md = ProxyMatch.GetMatch(p, msg, proxyMatch.Groups["text"].Value);
                 }
             }
 
             return md;
         }
 
-        private MatchDescription MatchReset(IMessage msg)
+        private ProxyMatch MatchReset(IMessage msg)
         {
             var resetMatch = regexCache.ResetRegex.Match(msg.Content);
             return resetMatch.Success
-                ? MatchDescription.ResetMatch
-                : MatchDescription.NoMatch;
+                ? ProxyMatch.ResetMatch
+                : ProxyMatch.NoMatch;
         }
     }
 }
