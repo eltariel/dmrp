@@ -30,6 +30,7 @@ namespace DiscordMultiRP.Web.Util
                 if (discord == null)
                 {
                     context.Result = new NotFoundObjectResult("Can't connect to Discord.");
+                    return;
                 }
 
                 var httpContext = context.HttpContext;

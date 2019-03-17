@@ -95,7 +95,7 @@ namespace DiscordMultiRP.Web.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Policy = DbRoleRequirement.RequiresAdmin)]
-        public async Task<IActionResult> Create([Bind("Id,DiscordId,IsMonitored")] Channel channel)
+        public async Task<IActionResult> Create([Bind("DiscordId,IsMonitored")] Channel channel)
         {
             if (ModelState.IsValid)
             {
