@@ -28,13 +28,18 @@ namespace DiscordMultiRP.Web.Util
                 return c;
             }
 
+            return await Login(TokenType.Bot, cfg["Discord:bot-token"]);
+        }
+
+        private async Task<DiscordSocketClient> Login(TokenType tokenType, string token)
+        {
             try
             {
                 var discord = new DiscordSocketClient();
                 var ready = new TaskCompletionSource<bool>();
                 discord.Ready += OnDiscordReady;
 
-                await discord.LoginAsync(TokenType.Bot, cfg["Discord:bot-token"]);
+                await discord.LoginAsync(tokenType, token);
                 await discord.StartAsync();
                 await ready.Task;
                 instance = discord;

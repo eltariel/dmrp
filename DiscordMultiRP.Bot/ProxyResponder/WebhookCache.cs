@@ -9,16 +9,10 @@ namespace DiscordMultiRP.Bot.ProxyResponder
 {
     public class WebhookCache
     {
-        private readonly DiscordSocketClient discord;
+        private readonly Dictionary<ulong, DiscordWebhookClient> hookClients = new Dictionary<ulong, DiscordWebhookClient>();
 
-        public WebhookCache(DiscordSocketClient discord)
+        public async Task<DiscordWebhookClient> GetWebhook(ITextChannel channel, DiscordSocketClient discord)
         {
-            this.discord = discord;
-        }
-
-        public async Task<DiscordWebhookClient> GetWebhook(ITextChannel channel)
-        {
-            var hookClients = new Dictionary<ulong, DiscordWebhookClient>();
             if (!hookClients.TryGetValue(channel.Id, out var client))
             {
                 var hooks = await channel.GetWebhooksAsync();

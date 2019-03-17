@@ -4,13 +4,17 @@
     <TargetFramework>netcoreapp2.2</TargetFramework>
     <AspNetCoreHostingModel>InProcess</AspNetCoreHostingModel>
     <UserSecretsId>c6f7c95d-0313-4a07-9706-a0d3df301ce3</UserSecretsId>
+    <ApplicationInsightsResourceId>/subscriptions/cec70a91-7da9-4da0-a1a0-370c03ad8a4d/resourcegroups/Default-ApplicationInsights-EastUS/providers/microsoft.insights/components/DiscordMultiRP.Web</ApplicationInsightsResourceId>
+    <ApplicationInsightsAnnotationResourceId>/subscriptions/cec70a91-7da9-4da0-a1a0-370c03ad8a4d/resourcegroups/Default-ApplicationInsights-EastUS/providers/microsoft.insights/components/DiscordMultiRP.Web</ApplicationInsightsAnnotationResourceId>
   </PropertyGroup>
 
 
   <ItemGroup>
     <PackageReference Include="Discord.Net" Version="2.0.1" />
+    <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.5.1" />
     <PackageReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Microsoft.AspNetCore.Razor.Design" Version="2.2.0" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.1.0" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="2.2.0" />
     <PackageReference Include="morelinq" Version="3.1.0" />
   </ItemGroup>
@@ -18,6 +22,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\DiscordMultiRP.Bot\DiscordMultiRP.Bot.csproj" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <WCFMetadata Include="Connected Services" />
   </ItemGroup>
 
 </Project>

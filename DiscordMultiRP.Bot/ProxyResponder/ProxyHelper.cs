@@ -19,7 +19,7 @@ namespace DiscordMultiRP.Bot.ProxyResponder
         private readonly IConfiguration cfg;
         private readonly string avatarBaseUrl;
 
-        public ProxyHelper(DiscordSocketClient discord, IProxyBuilder proxyBuilder, IConfiguration cfg)
+        public ProxyHelper(DiscordSocketClient discord, IConfiguration cfg)
         {
             this.discord = discord;
             this.cfg = cfg;
@@ -41,7 +41,7 @@ namespace DiscordMultiRP.Bot.ProxyResponder
                 ? $"{avatarBaseUrl}/{proxy.AvatarGuid}"
                 : proxyUser.GetAvatarUrl();
 
-            if (attachments.Any())
+            if (attachments?.Any()??false)
             {
                 var first = true;
                 foreach (var a in attachments)

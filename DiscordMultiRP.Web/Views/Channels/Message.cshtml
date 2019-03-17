@@ -1,28 +1,83 @@
-﻿@model DiscordMultiRP.Web.Models.SendChannelMessageViewModel
+﻿@using Discord
+@model DiscordMultiRP.Web.Models.SendChannelMessageViewModel
 
 @{
     ViewData["Title"] = "Send message";
 }
 
 <h1>Send message to Channel @Model.GuildName : @Model.ChannelName</h1>
-<div class="row">
-    <div class="col-md-4">
-        <form asp-action="Message">
-            <input type="hidden" asp-for="ChannelDiscordId" />
-            <input type="hidden" asp-for="ChannelDatabaseId" />
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <div class="form-group">
-                <label asp-for="Message" class="control-label"></label>
-                <input asp-for="Message" class="form-control"/>
-            </div>
-            <div class="form-group">
-                <input type="submit" value="Create" class="btn btn-primary" />
-            </div>
-        </form>
+<div class="container">
+    <div id="messagesList">
     </div>
+    <form asp-action="Message">
+        <input type="hidden" asp-for="ChannelDiscordId" />
+        <input type="hidden" asp-for="ChannelDatabaseId" />
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <div class="row">
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label asp-for="ProxyId" class="control-label"></label>
+                    <select asp-for="ProxyId" asp-items="ViewBag.Proxies" class="form-control"></select>
+                    <span asp-validation-for="ProxyId" class="text-danger"></span>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label asp-for="UserName" class="control-label"></label>
+                    <input asp-for="UserName" class="form-control" />
+                    <span asp-validation-for="UserName" class="text-danger"></span>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label asp-for="Message" class="control-label"></label>
+                    <input asp-for="Message" class="form-control" />
+                    <span asp-validation-for="Message" class="text-danger"></span>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="form-group">
+                    <input type="submit" value="Send" class="btn btn-primary" />
+                </div>
+            </div>
+        </div>
+    </form>
 </div>
-
 <div>
     <a asp-action="Index">Back to List</a>
 </div>
-<h1>Index</h1>
+
+<!--
+<script src="~/lib/signalr/dist/browser/signalr.js"></script>
+<script src="~/js/live.js"></script>
+-->
+
+<script src="~/lib/jquery/dist/jquery.js"></script>
+<script type="text/javascript">
+    $(document).ready(function() {
+        $.ajax({
+                url: "@Url.Action("Messages", new{id = Model.ChannelDatabaseId})",
+                data: {},
+                type: "GET",
+                dataType: "json"
+            })
+            .done(function(json) {
+                json.forEach(function (message) {
+
+                    var media = $("<div id='message-" + message.messageId + "' class='media'/>");
+                    media.append("<img class='mr-3 rounded-circle avatar' src='" + message.avatarUrl + "' alt='Avatar for " + message.authorUsername + "' />");
+
+                    var mediaBody = $("<div class='media-body'/>");
+                    mediaBody.append("<h3 class='mt-0'>" + message.authorUsername + "</h3>");
+                    mediaBody.append("<p>" + message.content + "</p>");
+                    media.append(mediaBody);
+
+                    var row = $("<div class='row'/>").append(media);
+                    row.appendTo("#messagesList");
+                });
+            })
+            .fail(function(xhr, status, error) {
+                alert("Error!");
+            });
+    })
+</script>

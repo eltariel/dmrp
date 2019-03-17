@@ -12,7 +12,7 @@ namespace DiscordMultiRP.Bot.ProxyResponder
     public class UserProxy
     {
         private static readonly Logger log = LogManager.GetCurrentClassLogger();
-
+        private readonly DiscordSocketClient discord;
         private readonly IProxyBuilder proxyBuilder;
         private readonly RegexCache regexCache;
         private readonly WebhookCache webhookCache;
@@ -20,11 +20,12 @@ namespace DiscordMultiRP.Bot.ProxyResponder
 
         public UserProxy(DiscordSocketClient discord, IProxyBuilder proxyBuilder, IConfiguration cfg)
         {
+            this.discord = discord;
             this.proxyBuilder = proxyBuilder;
             regexCache = new RegexCache();
-            webhookCache = new WebhookCache(discord);
+            webhookCache = new WebhookCache();
 
-            helper = new ProxyHelper(discord, proxyBuilder, cfg);
+            helper = new ProxyHelper(discord, cfg);
         }
 
         public async Task HandleMessage(SocketMessage msg)
@@ -101,7 +102,7 @@ namespace DiscordMultiRP.Bot.ProxyResponder
                 return;
             }
 
-            var webhook = await webhookCache.GetWebhook(c);
+            var webhook = await webhookCache.GetWebhook(c, discord);
             await helper.SendMessage(webhook, proxy, text, msg.Attachments);
         }
 

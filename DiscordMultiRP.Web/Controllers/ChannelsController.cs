@@ -11,19 +11,28 @@ using DiscordMultiRP.Bot.Data;
 using DiscordMultiRP.Web.Models;
 using DiscordMultiRP.Web.Util;
 using Microsoft.AspNetCore.Authorization;
+using DiscordMultiRP.Bot.ProxyResponder;
+using Microsoft.Extensions.Configuration;
+using Discord.Webhook;
+using Microsoft.AspNetCore.Authentication;
 
 namespace DiscordMultiRP.Web.Controllers
 {
     [RequireDiscord]
     public class ChannelsController : Controller
     {
+        private const int MESSAGE_FOR_BOT = -1;
         private readonly ProxyDataContext db;
         private readonly DiscordHelper discordHelper;
+        private readonly IConfiguration cfg;
+        private readonly WebhookCache webhookCache;
 
-        public ChannelsController(ProxyDataContext db, DiscordHelper discordHelper)
+        public ChannelsController(ProxyDataContext db, DiscordHelper discordHelper, IConfiguration cfg, WebhookCache webhookCache)
         {
             this.db = db;
             this.discordHelper = discordHelper;
+            this.cfg = cfg;
+            this.webhookCache = webhookCache;
         }
 
         // GET: Channels
@@ -191,6 +200,22 @@ namespace DiscordMultiRP.Web.Controllers
             var dbChannel = await db.Channels.FirstOrDefaultAsync(c => c.Id == id);
             var discord = await discordHelper.LoginBot();
 
+            var proxies = await db.ProxyChannels
+                .Include(pc => pc.Channel)
+                .Include(pc => pc.Proxy)
+                .Where(pc => pc.Channel.Id == dbChannel.Id || pc.Proxy.IsGlobal)
+                .Select(pc => pc.Proxy)
+                .ToListAsync();
+
+            var l = new List<SelectListItem>
+            {
+                new SelectListItem("Bot", $"{MESSAGE_FOR_BOT}"),
+                new SelectListItem("----", "", false, true)
+            };
+            l.AddRange(proxies.Select(p => new SelectListItem(p.Name, $"{p.Id}", false)));
+
+            ViewBag.Proxies = l;
+
             var discordChannel = discord.GetChannel(dbChannel.DiscordId) as ITextChannel;
             return View(new SendChannelMessageViewModel
             {
@@ -208,14 +233,49 @@ namespace DiscordMultiRP.Web.Controllers
             if (ModelState.IsValid)
             {
                 var discord = await discordHelper.LoginBot();
-                var c = discord.GetChannel(viewModel.ChannelDiscordId);
-                if (c is ITextChannel tc)
+                if (viewModel.ProxyId == MESSAGE_FOR_BOT)
                 {
-                    await tc.SendMessageAsync(viewModel.Message);
+                    if (discord.GetChannel(viewModel.ChannelDiscordId) is ITextChannel tc)
+                    {
+                        await tc.SendMessageAsync(viewModel.Message);
+                    }
+                }
+                else
+                {
+                    var ph = new ProxyHelper(discord, cfg);
+                    var proxy = await db.Proxies.FirstOrDefaultAsync(p => p.Id == viewModel.ProxyId);
+                    if (discord.GetChannel(viewModel.ChannelDiscordId) is ITextChannel tc)
+                    {
+                        var webhook = await webhookCache.GetWebhook(tc, discord);
+                        await ph.SendMessage(webhook, proxy, viewModel.Message, null);
+                    }
                 }
             }
 
             return RedirectToAction(nameof(Message), new {id = viewModel.ChannelDatabaseId});
+        }
+
+        [Authorize(Policy = DbRoleRequirement.RequiresAdmin)]
+        public async Task<IActionResult> Messages(int id, ulong? fromMessageId)
+        {
+            var dbChannel = await db.Channels.FirstOrDefaultAsync(c => c.Id == id);
+            var discord = await discordHelper.LoginBot();
+            if (discord.GetChannel(dbChannel.DiscordId) is SocketTextChannel tc)
+            {
+                var messageChunks = fromMessageId is ulong msgId
+                    ? tc.GetMessagesAsync(msgId, Direction.After)
+                    : tc.GetMessagesAsync();
+                var messages = await messageChunks.Flatten().ToList();
+                return Json(messages.Select(m => new
+                {
+                    messageId = m.Id,
+                    authorUsername = m.Author.Username,
+                    avatarUrl = m.Author.GetAvatarUrl(),
+                    content = m.Content
+                }));
+            }
+
+            return NotFound();
         }
 
         private bool ChannelExists(int id)

@@ -1,4 +1,6 @@
 ﻿using DiscordMultiRP.Bot.Data;
+using DiscordMultiRP.Bot.ProxyResponder;
+using DiscordMultiRP.Web.Hubs;
 using DiscordMultiRP.Web.Util;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
@@ -56,8 +58,11 @@ namespace DiscordMultiRP.Web
 
             services.AddScoped<DiscordHelper>();
             services.AddScoped<AvatarHelper>();
+            services.AddSingleton<WebhookCache>();
 
             services.AddSingleton<IAuthorizationHandler, DbRoleHandler>();
+
+            //services.AddSignalR();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -83,6 +88,11 @@ namespace DiscordMultiRP.Web
                     name: "default",
                     template: "{controller=Home}/{action=Index}/{id?}");
             });
+
+            //app.UseSignalR(routes =>
+            //{
+            //    routes.MapHub<DiscordHub>("/signalr/discord");
+            //});
         }
     }
 }
