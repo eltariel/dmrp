@@ -1,6 +1,7 @@
 ﻿using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Claims;
+using DiscordMultiRP.Bot;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OAuth;
@@ -12,8 +13,6 @@ namespace DiscordMultiRP.Web.Util
 {
     public static class DiscordOAuthExtensions
     {
-        private static readonly string apiBase = "https://discordapp.com/api/";
-
         public static void RegisterDiscordOAuth(this IServiceCollection services, IConfiguration dfg)
         {
             services.AddAuthentication(options =>
@@ -29,9 +28,9 @@ namespace DiscordMultiRP.Web.Util
                     options.ClientSecret = dfg["Discord:ClientSecret"];
                     options.CallbackPath = "/signin-discord";
 
-                    options.AuthorizationEndpoint = apiBase + "oauth2/authorize";
-                    options.TokenEndpoint = apiBase + "oauth2/token";
-                    options.UserInformationEndpoint = apiBase + "users/@me";
+                    options.AuthorizationEndpoint = Config.ApiBaseUrl + "oauth2/authorize";
+                    options.TokenEndpoint = Config.ApiBaseUrl + "oauth2/token";
+                    options.UserInformationEndpoint = Config.ApiBaseUrl + "users/@me";
 
                     var scopes = "identify,email,guilds,connections,guilds.join,gdm.join";
                     foreach (var s in scopes.Split(','))

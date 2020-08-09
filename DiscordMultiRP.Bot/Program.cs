@@ -19,7 +19,7 @@ namespace DiscordMultiRP.Bot
         private static readonly Logger dlog = LogManager.GetLogger(nameof(DiscordSocketClient));
 
         private readonly IConfiguration cfg;
-        private readonly DiscordSocketClient discord = new DiscordSocketClient();
+        private readonly DiscordSocketClient discord = new DiscordSocketClient(Config.DiscordConfig);
 
         private readonly DiceRoller dice = new DiceRoller();
         private UserProxy proxy;

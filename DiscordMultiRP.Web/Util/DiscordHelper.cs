@@ -4,6 +4,7 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
+using DiscordMultiRP.Bot;
 using Microsoft.Extensions.Configuration;
 using NLog;
 
@@ -35,7 +36,7 @@ namespace DiscordMultiRP.Web.Util
         {
             try
             {
-                var discord = new DiscordSocketClient();
+                var discord = new DiscordSocketClient(Config.DiscordConfig);
                 var ready = new TaskCompletionSource<bool>();
                 discord.Ready += OnDiscordReady;
 
