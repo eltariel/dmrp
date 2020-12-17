@@ -265,7 +265,7 @@ namespace DiscordMultiRP.Web.Controllers
                 var messageChunks = fromMessageId is ulong msgId
                     ? tc.GetMessagesAsync(msgId, Direction.After)
                     : tc.GetMessagesAsync();
-                var messages = await messageChunks.Flatten().ToList();
+                var messages = await messageChunks.Flatten().ToListAsync();
                 return Json(messages.Select(m => new
                 {
                     messageId = m.Id,

@@ -11,7 +11,7 @@ RUN dotnet restore
 COPY . ./
 RUN dotnet publish -c Debug -o /app/out/bot DiscordMultiRP.Bot/DiscordMultiRP.Bot.csproj && \
     dotnet publish -c Debug -o /app/out/web DiscordMultiRP.Web/DiscordMultiRP.Web.csproj && \
-	cp NLog.config out/bot/ && cp NLog.config out/web/
+    cp NLog.config out/bot/ && cp NLog.config out/web/
 
 # Build runtime images
 FROM mcr.microsoft.com/dotnet/core/aspnet:2.2 AS web

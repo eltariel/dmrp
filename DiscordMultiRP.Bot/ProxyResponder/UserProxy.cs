@@ -80,7 +80,7 @@ namespace DiscordMultiRP.Bot.ProxyResponder
         {
             log.Debug($"User {botUser} claiming last non-specific message for proxy {proxy.Name}");
             var c = msg.Channel;
-            var chm = (await msg.Channel.GetMessagesAsync().ToList()).SelectMany(x => x).ToList();
+            var chm = (await msg.Channel.GetMessagesAsync().ToListAsync()).SelectMany(x => x).ToList();
             var last = chm.FirstOrDefault(m => m.Id != msg.Id &&
                                                m.Author.Id == msg.Author.Id ||
                                                IsOwnProxy(m.Author, msg.Author));
